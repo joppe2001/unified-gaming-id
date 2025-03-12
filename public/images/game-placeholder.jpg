@@ -1,0 +1,12 @@
+// This is a binary file, so we'll create a base64-encoded placeholder image
+// The actual file will be created when the user runs the application
+// For now, we'll just create a text file with instructions
+
+This file should be replaced with an actual game placeholder image.
+You can use any generic game controller or gaming-related image.
+Recommended size: 460x215 pixels (Steam header size).
+
+Example:
+1. Find a royalty-free game controller or gaming image
+2. Resize it to 460x215 pixels
+3. Save it as game-placeholder.jpg in this directory 

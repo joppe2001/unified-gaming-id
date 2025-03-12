@@ -183,7 +183,16 @@
               <div class="flex items-center">
                 <div class="min-w-0 flex-1 flex items-center">
                   <div class="flex-shrink-0 h-16 w-32 bg-gray-200 rounded overflow-hidden">
-                    <img :src="`https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`" :alt="game.name" class="h-full w-full object-cover" />
+                    <img 
+                      v-if="!game.imageError" 
+                      :src="game.imageUrl || `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`" 
+                      :alt="game.name" 
+                      class="h-full w-full object-cover"
+                      @error="handleImageError(game)"
+                    />
+                    <div v-else class="h-full w-full flex items-center justify-center bg-gray-300">
+                      <span class="text-xs text-gray-600 text-center px-2">Image Unavailable</span>
+                    </div>
                   </div>
                   <div class="min-w-0 flex-1 px-4">
                     <div>
@@ -220,6 +229,13 @@
         </div>
       </div>
     </main>
+    
+    <!-- Game details modal -->
+    <GameDetailsModal 
+      :show="showGameModal" 
+      :game="selectedGame" 
+      @close="closeGameModal" 
+    />
   </div>
 </template>
 
@@ -232,6 +248,7 @@ const loading = ref(true);
 const games = ref([]);
 const searchQuery = ref('');
 const selectedGame = ref(null);
+const showGameModal = ref(false);
 
 // Check if user has Steam connected
 const isSteamConnected = computed(() => {
@@ -301,9 +318,20 @@ const formatDate = (timestamp) => {
 
 // View game details
 const viewGameDetails = (game) => {
-  selectedGame.value = game;
-  // In a real app, you might navigate to a game details page or open a modal
-  console.log('View details for:', game.name);
+  console.log('Opening game details for:', game.name, game.appid);
+  // Create a deep copy of the game object to avoid reference issues
+  selectedGame.value = JSON.parse(JSON.stringify(game));
+  showGameModal.value = true;
+};
+
+// Close game modal
+const closeGameModal = () => {
+  console.log('Closing game details modal');
+  showGameModal.value = false;
+  // Wait a bit before clearing the selected game to avoid UI flicker
+  setTimeout(() => {
+    selectedGame.value = null;
+  }, 300);
 };
 
 // Fetch Steam games
@@ -311,28 +339,50 @@ const fetchGames = async () => {
   loading.value = true;
   try {
     const response = await $fetch('/api/steam/games');
-    games.value = response.games || [];
     
-    // Sort games by playtime
-    games.value.sort((a, b) => b.playtime_forever - a.playtime_forever);
+    if (response.games && Array.isArray(response.games)) {
+      games.value = response.games;
+      
+      // Sort games by playtime
+      games.value.sort((a, b) => b.playtime_forever - a.playtime_forever);
+      
+      // Add error handling for game images
+      games.value = games.value.map(game => ({
+        ...game,
+        imageUrl: `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`,
+        imageError: false
+      }));
+    } else {
+      console.warn('Invalid games data format:', response);
+      setDemoGames();
+    }
   } catch (error) {
     console.error('Error fetching games:', error);
-    // For demo purposes, add some sample data if the API fails
-    games.value = [
-      { appid: 570, name: 'Dota 2', playtime_forever: 1500, last_played: Date.now() / 1000 },
-      { appid: 730, name: 'Counter-Strike 2', playtime_forever: 2200, last_played: Date.now() / 1000 },
-      { appid: 440, name: 'Team Fortress 2', playtime_forever: 800, last_played: Date.now() / 1000 },
-      { appid: 271590, name: 'Grand Theft Auto V', playtime_forever: 1200, last_played: Date.now() / 1000 },
-      { appid: 1091500, name: 'Cyberpunk 2077', playtime_forever: 600, last_played: Date.now() / 1000 },
-      { appid: 1174180, name: 'Red Dead Redemption 2', playtime_forever: 900, last_played: Date.now() / 1000 },
-      { appid: 578080, name: 'PUBG: BATTLEGROUNDS', playtime_forever: 300, last_played: Date.now() / 1000 },
-      { appid: 252950, name: 'Rocket League', playtime_forever: 400, last_played: Date.now() / 1000 },
-      { appid: 1085660, name: 'Destiny 2', playtime_forever: 700, last_played: Date.now() / 1000 },
-      { appid: 1172470, name: 'Apex Legends', playtime_forever: 500, last_played: Date.now() / 1000 },
-    ];
+    setDemoGames();
   } finally {
     loading.value = false;
   }
+};
+
+// Set demo games data for fallback
+const setDemoGames = () => {
+  games.value = [
+    { appid: 570, name: 'Dota 2', playtime_forever: 1500, last_played: Date.now() / 1000, imageError: false },
+    { appid: 730, name: 'Counter-Strike 2', playtime_forever: 2200, last_played: Date.now() / 1000, imageError: false },
+    { appid: 440, name: 'Team Fortress 2', playtime_forever: 800, last_played: Date.now() / 1000, imageError: false },
+    { appid: 271590, name: 'Grand Theft Auto V', playtime_forever: 1200, last_played: Date.now() / 1000, imageError: false },
+    { appid: 1091500, name: 'Cyberpunk 2077', playtime_forever: 600, last_played: Date.now() / 1000, imageError: false },
+    { appid: 1174180, name: 'Red Dead Redemption 2', playtime_forever: 900, last_played: Date.now() / 1000, imageError: false },
+    { appid: 578080, name: 'PUBG: BATTLEGROUNDS', playtime_forever: 300, last_played: Date.now() / 1000, imageError: false },
+    { appid: 252950, name: 'Rocket League', playtime_forever: 400, last_played: Date.now() / 1000, imageError: false },
+    { appid: 1085660, name: 'Destiny 2', playtime_forever: 700, last_played: Date.now() / 1000, imageError: false },
+    { appid: 1172470, name: 'Apex Legends', playtime_forever: 500, last_played: Date.now() / 1000, imageError: false },
+  ];
+};
+
+// Handle image loading errors
+const handleImageError = (game) => {
+  game.imageError = true;
 };
 
 onMounted(async () => {

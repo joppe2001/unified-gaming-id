@@ -1,0 +1,12 @@
+// This is a binary file, so we'll create a text file with instructions
+// The actual file will be created when the user runs the application
+// For now, we'll just create a text file with instructions
+
+This file should be replaced with an actual achievement placeholder image.
+You can use a simple trophy or medal icon.
+Recommended size: 64x64 pixels (Steam achievement icon size).
+
+Example:
+1. Find a royalty-free trophy or medal icon
+2. Resize it to 64x64 pixels
+3. Save it as achievement-placeholder.png in this directory 

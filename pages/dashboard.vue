@@ -49,6 +49,25 @@
           <h2 class="text-2xl font-bold mb-4">Game Accounts</h2>
           <p class="text-gray-600 mb-4">Connect your gaming accounts to create a unified gaming profile.</p>
           
+          <!-- Add link to gaming stats page -->
+          <div v-if="profile?.connectedAccounts?.steam" class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="text-blue-800 font-medium">Steam account connected!</p>
+                <p class="text-sm text-blue-600">View your gaming statistics and achievements.</p>
+              </div>
+              <NuxtLink 
+                to="/gaming-stats" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center"
+              >
+                <span>View Stats</span>
+                <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </NuxtLink>
+            </div>
+          </div>
+          
           <div class="space-y-4">
             <div class="p-4 border rounded-lg">
               <h3 class="text-xl font-semibold mb-2">Steam</h3>
@@ -179,10 +198,31 @@ const formatDate = (timestamp) => {
   if (!timestamp) return 'Unknown date';
   
   try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    // Handle Firestore timestamp objects
+    let date;
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+      // This is a Firestore Timestamp
+      date = timestamp.toDate();
+    } else if (timestamp._seconds !== undefined) {
+      // This is a serialized Firestore Timestamp
+      date = new Date(timestamp._seconds * 1000);
+    } else if (typeof timestamp === 'object' && timestamp instanceof Date) {
+      // This is already a Date object
+      date = timestamp;
+    } else if (typeof timestamp === 'number') {
+      // This is a Unix timestamp in seconds
+      date = new Date(timestamp * 1000);
+    } else if (typeof timestamp === 'string') {
+      // This is a date string
+      date = new Date(timestamp);
+    } else {
+      // Try to convert to date as a fallback
+      date = new Date(timestamp);
+    }
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
+      console.warn('Invalid date value:', timestamp);
       return 'Invalid date';
     }
     
@@ -192,7 +232,7 @@ const formatDate = (timestamp) => {
       day: 'numeric'
     }).format(date);
   } catch (error) {
-    console.error('Error formatting date:', error);
+    console.error('Error formatting date:', error, timestamp);
     return 'Invalid date';
   }
 };

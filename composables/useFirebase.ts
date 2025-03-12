@@ -90,13 +90,22 @@ export const useFirebase = () => {
   };
 
   // Sign in with Google
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (): Promise<UserCredential> => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
-      // Note: This will redirect the page, so no return value is needed
+      // Use signInWithPopup instead of signInWithRedirect for more reliable authentication
+      const result = await signInWithPopup(auth, provider);
+      
+      // Store the ID token in a cookie
+      if (result.user) {
+        await storeIdTokenInCookie(result.user);
+      }
+      
+      // Return the result
+      return result;
     } catch (err) {
       error.value = err as Error;
+      console.error('Error signing in with Google:', err);
       throw err;
     }
   };
