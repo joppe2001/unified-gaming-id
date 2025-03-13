@@ -97,13 +97,78 @@
                     </svg>
                     {{ checkingAll ? 'Checking...' : 'Verify All' }}
                   </button>
+                  <button 
+                    v-if="achievementsInfo.isPrivate"
+                    @click="forceAchievements" 
+                    class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center hover:bg-purple-200"
+                    :disabled="loading || forcingAchievements"
+                  >
+                    <svg 
+                      class="h-3 w-3 mr-1" 
+                      :class="{ 'animate-spin': forcingAchievements }"
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    {{ forcingAchievements ? 'Fetching...' : 'Bypass Privacy' }}
+                  </button>
                   <div v-if="achievementsInfo.isPrivate" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                     Private Profile Data
+                  </div>
+                  <div v-else-if="achievementsInfo.bypassedPrivacy" class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                    Bypassed Privacy
                   </div>
                   <div v-else-if="achievementsInfo.cached" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                     Cached Data
                   </div>
                 </div>
+              </div>
+              
+              <!-- Privacy settings instructions -->
+              <div v-if="achievementsInfo.isPrivate && !showPrivacyInstructions" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p class="text-sm text-yellow-800">
+                  Your Steam profile privacy settings are preventing us from accessing your achievements.
+                </p>
+                <button 
+                  @click="showPrivacyInstructions = true" 
+                  class="mt-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-300"
+                >
+                  Show How to Fix
+                </button>
+              </div>
+              
+              <div v-if="showPrivacyInstructions" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div class="flex justify-between items-start">
+                  <h5 class="font-medium text-yellow-800">How to Fix Privacy Settings</h5>
+                  <button 
+                    @click="showPrivacyInstructions = false" 
+                    class="text-yellow-500 hover:text-yellow-700"
+                  >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <ol class="mt-2 text-sm text-yellow-800 list-decimal pl-5 space-y-1">
+                  <li>Go to your <a href="https://steamcommunity.com/my/edit/settings" target="_blank" class="text-blue-600 hover:underline">Steam Profile Privacy Settings</a></li>
+                  <li>Set "My Profile" to "Public"</li>
+                  <li>Set "Game details" to "Public"</li>
+                  <li>Click "Save"</li>
+                  <li>Return here and click "Refresh" to update your achievements</li>
+                </ol>
+                <p class="mt-2 text-xs text-yellow-700">
+                  Note: You can use the "Bypass Privacy" button to see your achievements without changing your privacy settings, but the data may not be accurate.
+                </p>
+              </div>
+              
+              <!-- Bypassed privacy warning -->
+              <div v-if="achievementsInfo.bypassedPrivacy" class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-md">
+                <p class="text-sm text-purple-800">
+                  <strong>Note:</strong> Your achievements are being shown with bypassed privacy settings. The unlocked status may not be accurate.
+                  For accurate achievement data, please update your <a href="https://steamcommunity.com/my/edit/settings" target="_blank" class="text-blue-600 hover:underline">Steam privacy settings</a>.
+                </p>
               </div>
               
               <div v-if="loading" class="py-4 text-center text-gray-500">
@@ -211,9 +276,61 @@
               <div>Cached: {{ achievementsInfo.cached }}</div>
               <div>Private: {{ achievementsInfo.isPrivate }}</div>
               <div>Fallback: {{ achievementsInfo.isFallback }}</div>
+              <div>Bypassed Privacy: {{ achievementsInfo.bypassedPrivacy }}</div>
+              <div>Forced: {{ achievementsInfo.forced }}</div>
+              <div>Unlocked: {{ achievements.filter(a => a.unlocked).length }}</div>
               <div v-if="achievements.length > 0">
                 <div class="mt-2"><strong>Sample Achievement:</strong></div>
                 <pre>{{ JSON.stringify(achievements[0], null, 2) }}</pre>
+              </div>
+              
+              <div class="mt-2">
+                <button 
+                  @click="checkPrivacySettings" 
+                  class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 mr-2"
+                  :disabled="checkingPrivacy"
+                >
+                  {{ checkingPrivacy ? 'Checking...' : 'Check Privacy Settings' }}
+                </button>
+                
+                <button 
+                  @click="forceAchievements" 
+                  class="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+                  :disabled="forcingAchievements"
+                >
+                  {{ forcingAchievements ? 'Forcing...' : 'Force Achievements' }}
+                </button>
+              </div>
+              
+              <div v-if="privacyInfo" class="mt-2 p-2 bg-white rounded">
+                <div><strong>Privacy Check Results:</strong></div>
+                <div v-if="privacyInfo.errors.length > 0" class="text-red-500">
+                  <div v-for="(error, index) in privacyInfo.errors" :key="index">
+                    - {{ error }}
+                  </div>
+                </div>
+                <div v-else class="text-green-500">
+                  Your Steam profile appears to be correctly configured.
+                </div>
+                
+                <div v-if="privacyInfo.privacyInstructions" class="mt-2 text-blue-600">
+                  <div v-for="(instruction, index) in privacyInfo.privacyInstructions" :key="index">
+                    {{ instruction }}
+                  </div>
+                </div>
+                
+                <div v-if="privacyInfo.profileInfo" class="mt-2">
+                  <div><strong>Profile Info:</strong></div>
+                  <div>Visibility: {{ getVisibilityText(privacyInfo.profileInfo.communityvisibilitystate) }}</div>
+                  <div>Profile URL: <a :href="privacyInfo.profileInfo.profileurl" target="_blank" class="text-blue-500 hover:underline">{{ privacyInfo.profileInfo.personaname }}</a></div>
+                </div>
+                
+                <div v-if="privacyInfo.achievementsInfo" class="mt-2">
+                  <div><strong>Achievements Info:</strong></div>
+                  <div>Success: {{ privacyInfo.achievementsInfo.success ? 'Yes' : 'No' }}</div>
+                  <div>Game: {{ privacyInfo.achievementsInfo.gameName }}</div>
+                  <div>Achievement Count: {{ privacyInfo.achievementsInfo.achievementCount }}</div>
+                </div>
               </div>
             </div>
             
@@ -259,7 +376,9 @@ const achievementsInfo = ref({
   isPrivate: false,
   cached: false,
   hasAchievements: true,
-  isFallback: false
+  isFallback: false,
+  bypassedPrivacy: false,
+  forced: false
 });
 
 // Calculate unlocked percentage
@@ -389,7 +508,9 @@ const fetchAchievements = async (gameId: string | number, forceRefresh = false) 
     isPrivate: false,
     cached: false,
     hasAchievements: true,
-    isFallback: false
+    isFallback: false,
+    bypassedPrivacy: false,
+    forced: false
   };
   
   try {
@@ -399,6 +520,8 @@ const fetchAchievements = async (gameId: string | number, forceRefresh = false) 
       isPrivate?: boolean;
       hasAchievements?: boolean;
       isFallback?: boolean;
+      bypassedPrivacy?: boolean;
+      forced?: boolean;
     }>(`/api/steam/achievements?gameId=${gameId}${forceRefresh ? '&forceRefresh=true' : ''}`);
     
     // Add detailed logging for debugging
@@ -419,7 +542,9 @@ const fetchAchievements = async (gameId: string | number, forceRefresh = false) 
         isPrivate: !!response.isPrivate,
         cached: !!response.cached,
         hasAchievements: response.hasAchievements !== false,
-        isFallback: !!response.isFallback
+        isFallback: !!response.isFallback,
+        bypassedPrivacy: !!response.bypassedPrivacy,
+        forced: !!response.forced
       };
       
     } else {
@@ -512,4 +637,83 @@ const checkAllAchievements = async () => {
     checkingAll.value = false;
   }
 };
+
+// Add a checkPrivacySettings function
+const checkingPrivacy = ref(false);
+const privacyInfo = ref<any>(null);
+
+const checkPrivacySettings = async () => {
+  if (!props.game?.appid) return;
+  
+  checkingPrivacy.value = true;
+  privacyInfo.value = null;
+  
+  try {
+    const response = await $fetch<any>(`/api/steam/debug-profile?gameId=${props.game.appid}`);
+    
+    console.log('Privacy check result:', response);
+    privacyInfo.value = response;
+  } catch (error) {
+    console.error('Error checking privacy:', error);
+    alert('Error checking privacy. See console for details.');
+  } finally {
+    checkingPrivacy.value = false;
+  }
+};
+
+// Add a getVisibilityText function
+const getVisibilityText = (visibility: number) => {
+  switch (visibility) {
+    case 1:
+      return 'Private';
+    case 2:
+      return 'Friends Only';
+    case 3:
+      return 'Public';
+    default:
+      return `Unknown (${visibility})`;
+  }
+};
+
+// Add a forceAchievements function
+const forcingAchievements = ref(false);
+
+const forceAchievements = async () => {
+  if (!props.game?.appid) return;
+  
+  forcingAchievements.value = true;
+  
+  try {
+    // Call the force-achievements endpoint
+    const response = await $fetch<any>(`/api/steam/force-achievements?gameId=${props.game.appid}&bypassPrivacy=true`);
+    
+    console.log('Force achievements response:', response);
+    
+    if (response.achievements && Array.isArray(response.achievements)) {
+      achievements.value = response.achievements;
+      
+      // Update achievement info
+      achievementsInfo.value = {
+        ...achievementsInfo.value,
+        isPrivate: !!response.isPrivate,
+        bypassedPrivacy: !!response.bypassedPrivacy,
+        forced: true
+      };
+      
+      // Show a message about the results
+      const unlockedCount = achievements.value.filter(a => a.unlocked).length;
+      alert(`Retrieved ${achievements.value.length} achievements directly from Steam API.\n${unlockedCount} achievements are unlocked.`);
+    } else if (response.error) {
+      alert(`Error: ${response.error}`);
+    }
+  } catch (error) {
+    console.error('Error forcing achievements:', error);
+    alert('Error forcing achievements. See console for details.');
+  } finally {
+    forcingAchievements.value = false;
+  }
+};
+
+// Privacy instructions
+const showPrivacyInstructions = ref(false);
 </script> 

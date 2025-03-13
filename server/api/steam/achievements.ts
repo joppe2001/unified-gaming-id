@@ -89,7 +89,9 @@ export default defineEventHandler(async (event) => {
         return {
           achievements: cachedAchievements,
           cached: true,
-          isPrivate: !!cachedData.isPrivate
+          isPrivate: !!cachedData.isPrivate,
+          bypassedPrivacy: !!cachedData.bypassedPrivacy,
+          forced: !!cachedData.forced
         };
       }
     }
@@ -163,13 +165,17 @@ export default defineEventHandler(async (event) => {
           .set({
             achievements,
             timestamp: new Date(),
-            isPrivate: true
+            isPrivate: true,
+            bypassedPrivacy: false,
+            forced: false
           })
           .catch(error => console.log('Error caching achievements:', error));
         
         return {
           achievements,
-          isPrivate: true
+          isPrivate: true,
+          bypassedPrivacy: false,
+          forced: false
         };
       }
       
@@ -230,12 +236,18 @@ export default defineEventHandler(async (event) => {
       .doc(`${steamId}_${gameId}`)
       .set({
         achievements: mergedAchievements,
-        timestamp: new Date()
+        timestamp: new Date(),
+        isPrivate: false,
+        bypassedPrivacy: false,
+        forced: false
       })
       .catch(error => console.log('Error caching achievements:', error));
     
     return {
-      achievements: mergedAchievements
+      achievements: mergedAchievements,
+      isPrivate: false,
+      bypassedPrivacy: false,
+      forced: false
     };
   } catch (error: any) {
     console.error('Error fetching Steam achievements:', error);
@@ -290,7 +302,10 @@ export default defineEventHandler(async (event) => {
           globalPercentage: 45.7
         }
       ],
-      isFallback: true
+      isFallback: true,
+      isPrivate: false,
+      bypassedPrivacy: false,
+      forced: false
     };
   }
 }); 
