@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" @keydown.esc="close" tabindex="0" ref="modalRef">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
       <!-- Background overlay -->
       <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="close"></div>
@@ -127,9 +127,9 @@
               </div>
               
               <!-- Privacy settings instructions -->
-              <div v-if="achievementsInfo.isPrivate && !showPrivacyInstructions" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div v-if="!showPrivacyInstructions" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p class="text-sm text-yellow-800">
-                  Your Steam profile privacy settings are preventing us from accessing your achievements.
+                  <strong>Steam Privacy Settings:</strong> Your achievements are currently private. You can fix this or use the "Bypass Privacy" button above.
                 </p>
                 <button 
                   @click="showPrivacyInstructions = true" 
@@ -141,7 +141,7 @@
               
               <div v-if="showPrivacyInstructions" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <div class="flex justify-between items-start">
-                  <h5 class="font-medium text-yellow-800">How to Fix Privacy Settings</h5>
+                  <h5 class="font-medium text-yellow-800">How to Fix Steam Privacy Settings</h5>
                   <button 
                     @click="showPrivacyInstructions = false" 
                     class="text-yellow-500 hover:text-yellow-700"
@@ -153,14 +153,16 @@
                 </div>
                 <ol class="mt-2 text-sm text-yellow-800 list-decimal pl-5 space-y-1">
                   <li>Go to your <a href="https://steamcommunity.com/my/edit/settings" target="_blank" class="text-blue-600 hover:underline">Steam Profile Privacy Settings</a></li>
-                  <li>Set "My Profile" to "Public"</li>
                   <li>Set "Game details" to "Public"</li>
-                  <li>Click "Save"</li>
+                  <li><strong>Important:</strong> Make sure the checkbox "Always keep my total playtime private even if users can see my game details" is <strong>UNCHECKED</strong></li>
+                  <li>Click "Save Changes" at the bottom of the page</li>
+                  <li>Wait a few minutes for Steam to update your settings</li>
                   <li>Return here and click "Refresh" to update your achievements</li>
                 </ol>
-                <p class="mt-2 text-xs text-yellow-700">
-                  Note: You can use the "Bypass Privacy" button to see your achievements without changing your privacy settings, but the data may not be accurate.
-                </p>
+                <div class="mt-3 p-2 bg-blue-50 rounded-md text-xs text-blue-800">
+                  <p><strong>Note:</strong> Steam's API error message is: "Profile is not public" - This specifically refers to your game statistics being private, not your entire profile.</p>
+                  <p class="mt-1">If you've already set everything to public, try waiting 24 hours as Steam can take time to update privacy settings in their API.</p>
+                </div>
               </div>
               
               <!-- Bypassed privacy warning -->
@@ -206,10 +208,114 @@
                   </div>
                 </div>
                 
+                <!-- Achievement filters -->
+                <div class="mb-4 flex flex-wrap gap-2 items-center">
+                  <div class="text-sm font-medium text-gray-700">Filter:</div>
+                  <div class="flex flex-wrap gap-2">
+                    <button 
+                      @click="filterStatus = 'all'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="filterStatus === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      All
+                    </button>
+                    <button 
+                      @click="filterStatus = 'unlocked'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="filterStatus === 'unlocked' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Unlocked
+                    </button>
+                    <button 
+                      @click="filterStatus = 'locked'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="filterStatus === 'locked' ? 'bg-gray-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Locked
+                    </button>
+                  </div>
+                  
+                  <div class="text-sm font-medium text-gray-700 ml-4">Sort by:</div>
+                  <div class="flex flex-wrap gap-2">
+                    <button 
+                      @click="sortBy = 'default'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="sortBy === 'default' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Default
+                    </button>
+                    <button 
+                      @click="sortBy = 'name'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="sortBy === 'name' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Name
+                    </button>
+                    <button 
+                      @click="sortBy = 'rarity'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="sortBy === 'rarity' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Rarity
+                    </button>
+                    <button 
+                      v-if="hasUnlockTimes"
+                      @click="sortBy = 'date'" 
+                      class="text-xs px-2 py-1 rounded"
+                      :class="sortBy === 'date' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    >
+                      Unlock Date
+                    </button>
+                  </div>
+                  
+                  <button 
+                    @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'" 
+                    class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded flex items-center hover:bg-gray-200 ml-2"
+                  >
+                    <svg 
+                      class="h-3 w-3 mr-1" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                      :class="{ 'transform rotate-180': sortOrder === 'desc' }"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                    </svg>
+                    {{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}
+                  </button>
+                </div>
+                
+                <!-- Search filter -->
+                <div class="mb-4">
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      v-model="searchQuery" 
+                      placeholder="Search achievements..." 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <svg 
+                        class="h-4 w-4 text-gray-400" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Achievement count after filtering -->
+                <div v-if="filteredAndSortedAchievements.length !== achievements.length" class="mb-4 text-sm text-gray-600">
+                  Showing {{ filteredAndSortedAchievements.length }} of {{ achievements.length }} achievements
+                </div>
+                
                 <!-- Achievement list -->
                 <div class="mt-2 grid grid-cols-1 gap-2">
                   <div 
-                    v-for="achievement in achievements" 
+                    v-for="achievement in filteredAndSortedAchievements" 
                     :key="achievement.achievementId" 
                     class="flex items-center p-3 rounded-md"
                     :class="achievement.unlocked ? 'bg-green-50' : 'bg-gray-50'"
@@ -250,13 +356,6 @@
                       <span v-if="achievement.unlocked && achievement.unlockTime" class="text-xs text-gray-500 mt-1">
                         {{ formatDate(achievement.unlockTime) }}
                       </span>
-                      <button 
-                        @click="checkAchievement(achievement.achievementId)"
-                        class="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                        :disabled="checkingAchievement === achievement.achievementId"
-                      >
-                        {{ checkingAchievement === achievement.achievementId ? 'Checking...' : 'Verify' }}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -353,10 +452,23 @@
         </div>
       </div>
     </div>
+    
+    <!-- Sticky close button for mobile -->
+    <button 
+      @click="close" 
+      class="fixed bottom-4 right-4 md:hidden bg-gray-800 bg-opacity-70 rounded-full p-3 text-white hover:bg-opacity-100 shadow-lg"
+      aria-label="Close"
+    >
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+
 const props = defineProps({
   show: {
     type: Boolean,
@@ -462,11 +574,27 @@ const close = () => {
   emit('close');
 };
 
+// Add keyboard support for Escape key
+const modalRef = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  // Focus the modal when it's mounted to enable keyboard events
+  if (modalRef.value) {
+    modalRef.value.focus();
+  }
+});
+
 // Watch for show property changes
 watch(() => props.show, (newShow) => {
   
   if (newShow && props.game?.appid) {
     fetchAchievements(props.game.appid);
+    // Focus the modal when it's shown
+    nextTick(() => {
+      if (modalRef.value) {
+        modalRef.value.focus();
+      }
+    });
   } else if (!newShow) {
     // Reset state when modal is closed
     setTimeout(() => {
@@ -582,40 +710,7 @@ const refreshAchievements = () => {
   }
 };
 
-// Add a checkAchievement function
-const checkingAchievement = ref<string | null>(null);
-const checkedAchievement = ref<any>(null);
-
-const checkAchievement = async (achievementId: string) => {
-  if (!props.game?.appid) return;
-  
-  checkingAchievement.value = achievementId;
-  checkedAchievement.value = null;
-  
-  try {
-    const response = await $fetch<any>(`/api/steam/check-achievement?gameId=${props.game.appid}&achievementId=${achievementId}`);
-    
-    console.log('Achievement check result:', response);
-    checkedAchievement.value = response;
-    
-    // Show the result in an alert for now
-    alert(`Achievement "${response.achievement.name}" is ${response.achievement.unlocked ? 'UNLOCKED' : 'LOCKED'} according to Steam API directly.`);
-    
-    // Update the achievement in the list if it's different
-    const index = achievements.value.findIndex(a => a.achievementId === achievementId);
-    if (index !== -1 && achievements.value[index].unlocked !== response.achievement.unlocked) {
-      achievements.value[index].unlocked = response.achievement.unlocked;
-      achievements.value[index].unlockTime = response.achievement.unlockTime;
-    }
-  } catch (error) {
-    console.error('Error checking achievement:', error);
-    alert('Error checking achievement status. See console for details.');
-  } finally {
-    checkingAchievement.value = null;
-  }
-};
-
-// Add checkAllAchievements function
+// Add a checkAllAchievements function
 const checkingAll = ref(false);
 
 const checkAllAchievements = async () => {
@@ -716,4 +811,71 @@ const forceAchievements = async () => {
 
 // Privacy instructions
 const showPrivacyInstructions = ref(false);
+
+// Filter and sort functionality
+const filterStatus = ref('all');
+const sortBy = ref('default');
+const sortOrder = ref('asc');
+const searchQuery = ref('');
+
+const filteredAndSortedAchievements = computed(() => {
+  // First filter by status
+  let filtered = achievements.value.filter(a => {
+    if (filterStatus.value === 'all') return true;
+    if (filterStatus.value === 'unlocked' && a.unlocked) return true;
+    if (filterStatus.value === 'locked' && !a.unlocked) return true;
+    return false;
+  });
+  
+  // Then filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter(a => 
+      a.name.toLowerCase().includes(query) || 
+      a.description.toLowerCase().includes(query)
+    );
+  }
+
+  // Then sort
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy.value === 'default') return 0;
+    
+    if (sortBy.value === 'name') {
+      return a.name.localeCompare(b.name);
+    }
+    
+    if (sortBy.value === 'rarity') {
+      return (b.globalPercentage || 0) - (a.globalPercentage || 0);
+    }
+    
+    if (sortBy.value === 'date') {
+      // Put unlocked achievements first, sorted by unlock time
+      if (a.unlocked && b.unlocked) {
+        return (b.unlockTime || 0) - (a.unlockTime || 0);
+      }
+      // Unlocked achievements come before locked ones
+      if (a.unlocked && !b.unlocked) return -1;
+      if (!a.unlocked && b.unlocked) return 1;
+      // Both locked, maintain default order
+      return 0;
+    }
+    
+    return 0;
+  });
+
+  // Apply sort order
+  if (sortOrder.value === 'asc') {
+    if (sortBy.value === 'date') {
+      // For dates, we want newest first in desc, oldest first in asc
+      return sorted.reverse();
+    }
+    return sorted;
+  } else {
+    if (sortBy.value === 'date') {
+      // Already sorted newest first
+      return sorted;
+    }
+    return sorted.reverse();
+  }
+});
 </script> 
