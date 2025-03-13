@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
       steamApiKey: process.env.STEAM_API_KEY,
       riotApiKey: process.env.RIOT_API_KEY,
-      baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+      baseUrl: process.env.BASE_URL,
     }
   }
 });
