@@ -25,11 +25,19 @@ export default defineEventHandler(async (event) => {
     const decodedToken = await getAuth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
     
-    // Store userId in cookie for retrieval in callback
+    // Extract domain from baseUrl for cookie settings
+    const urlObj = new URL(baseUrl);
+    const domain = urlObj.hostname;
+    
+    // Store userId in cookie for retrieval in callback with proper settings for Vercel
     setCookie(event, 'steam_auth_state', userId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 10 // 10 minutes
+      secure: true,
+      maxAge: 60 * 10, // 10 minutes
+      path: '/',
+      sameSite: 'lax',
+      // Only set domain for production (not localhost)
+      ...(domain !== 'localhost' && { domain })
     });
     
     // Use a simpler approach for Steam OpenID

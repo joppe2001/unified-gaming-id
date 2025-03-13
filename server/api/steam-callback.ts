@@ -7,12 +7,20 @@ export default defineEventHandler(async (event) => {
   // Get runtime config
   const config = useRuntimeConfig();
   
+  // Get base URL for redirects and cookie settings
+  const baseUrl = config.public.baseUrl;
+  
+  // Extract domain from baseUrl for cookie settings
+  const urlObj = new URL(baseUrl);
+  const domain = urlObj.hostname;
+  
   const query = getQuery(event);
   const cookies = parseCookies(event);
   const userId = cookies.steam_auth_state;
   
   if (!userId) {
-    return sendRedirect(event, '/dashboard?error=invalid_state');
+    console.error('Steam auth state cookie not found');
+    return sendRedirect(event, `${baseUrl}/dashboard?error=invalid_state`);
   }
   
   try {
@@ -60,23 +68,28 @@ export default defineEventHandler(async (event) => {
       }
     });
     
-    // Set the custom token as a cookie
+    // Set the custom token as a cookie with proper settings for Vercel
     setCookie(event, 'firebaseCustomToken', customToken, {
       maxAge: 60 * 5, // 5 minutes
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production'
+      secure: true,
+      sameSite: 'lax',
+      // Only set domain for production (not localhost)
+      ...(domain !== 'localhost' && { domain })
     });
     
-    return sendRedirect(event, '/dashboard?platform=steam&status=connected');
+    // Use the full URL for the redirect
+    return sendRedirect(event, `${baseUrl}/dashboard?platform=steam&status=connected`);
   } catch (error: any) {
     console.error('Error processing Steam callback:', error);
     
     // Check if the error is related to Firestore not being enabled
     if (error.message?.includes('PERMISSION_DENIED') && error.message?.includes('Cloud Firestore API has not been used')) {
-      return sendRedirect(event, '/dashboard?error=firestore_not_enabled');
+      return sendRedirect(event, `${baseUrl}/dashboard?error=firestore_not_enabled`);
     }
     
-    return sendRedirect(event, '/dashboard?error=steam_callback_error');
+    // Use the full URL for the redirect
+    return sendRedirect(event, `${baseUrl}/dashboard?error=steam_callback_error`);
   }
 }); 
