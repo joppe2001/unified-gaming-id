@@ -81,6 +81,22 @@
                     </svg>
                     {{ loading ? 'Loading...' : 'Refresh' }}
                   </button>
+                  <button 
+                    @click="checkAllAchievements" 
+                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center hover:bg-blue-200"
+                    :disabled="loading || checkingAll"
+                  >
+                    <svg 
+                      class="h-3 w-3 mr-1" 
+                      :class="{ 'animate-spin': checkingAll }"
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ checkingAll ? 'Checking...' : 'Verify All' }}
+                  </button>
                   <div v-if="achievementsInfo.isPrivate" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                     Private Profile Data
                   </div>
@@ -169,6 +185,13 @@
                       <span v-if="achievement.unlocked && achievement.unlockTime" class="text-xs text-gray-500 mt-1">
                         {{ formatDate(achievement.unlockTime) }}
                       </span>
+                      <button 
+                        @click="checkAchievement(achievement.achievementId)"
+                        class="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                        :disabled="checkingAchievement === achievement.achievementId"
+                      >
+                        {{ checkingAchievement === achievement.achievementId ? 'Checking...' : 'Verify' }}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -178,8 +201,8 @@
           
           <!-- Footer -->
           <div class="px-6 py-3 bg-gray-50 text-right">
-            <!-- Debug info (only in development, using a different approach) -->
-            <div v-if="showDebugInfo" class="text-left mb-4 p-2 bg-gray-100 rounded text-xs font-mono">
+            <!-- Debug info -->
+            <div v-if="showDebugInfo" class="text-left mb-4 p-2 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60">
               <div><strong>Debug Info:</strong></div>
               <div>Loading: {{ loading }}</div>
               <div>Show: {{ show }}</div>
@@ -187,14 +210,28 @@
               <div>Achievements: {{ achievements.length }}</div>
               <div>Cached: {{ achievementsInfo.cached }}</div>
               <div>Private: {{ achievementsInfo.isPrivate }}</div>
+              <div>Fallback: {{ achievementsInfo.isFallback }}</div>
+              <div v-if="achievements.length > 0">
+                <div class="mt-2"><strong>Sample Achievement:</strong></div>
+                <pre>{{ JSON.stringify(achievements[0], null, 2) }}</pre>
+              </div>
             </div>
             
-            <button 
-              @click="close" 
-              class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Close
-            </button>
+            <div class="flex justify-between">
+              <button 
+                @click="showDebugInfo = !showDebugInfo" 
+                class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {{ showDebugInfo ? 'Hide Debug' : 'Show Debug' }}
+              </button>
+              
+              <button 
+                @click="close" 
+                class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -249,7 +286,7 @@ const lastUnlockedTime = computed(() => {
 });
 
 // Format playtime
-const formatPlaytime = (minutes) => {
+const formatPlaytime = (minutes: number | undefined) => {
   if (!minutes) return 'Never played';
   
   const hours = Math.floor(minutes / 60);
@@ -265,7 +302,7 @@ const formatPlaytime = (minutes) => {
 };
 
 // Format date
-const formatDate = (timestamp) => {
+const formatDate = (timestamp: number | undefined) => {
   if (!timestamp) return 'Unknown';
   
   try {
@@ -282,13 +319,13 @@ const formatDate = (timestamp) => {
 };
 
 // Format percentage
-const formatPercentage = (value) => {
+const formatPercentage = (value: number | undefined) => {
   if (value === undefined || value === null || isNaN(Number(value))) return '0.0';
   return Number(value).toFixed(1);
 };
 
 // Handle image loading errors
-const gameHeaderImage = ref(null);
+const gameHeaderImage = ref<HTMLImageElement | null>(null);
 const handleImageError = () => {
   if (gameHeaderImage.value) {
     gameHeaderImage.value.src = '/images/game-placeholder.jpg';
@@ -296,8 +333,9 @@ const handleImageError = () => {
 };
 
 // Handle achievement image errors
-const handleAchievementImageError = (event) => {
-  event.target.src = '/images/achievement-placeholder.png';
+const handleAchievementImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  target.src = '/images/achievement-placeholder.png';
 };
 
 // Close the modal
@@ -338,7 +376,7 @@ watch(() => props.game, async (newGame) => {
 }, { immediate: true });
 
 // Fetch achievements for a game
-const fetchAchievements = async (gameId, forceRefresh = false) => {
+const fetchAchievements = async (gameId: string | number, forceRefresh = false) => {
   if (!gameId) {
     console.warn('Cannot fetch achievements: No game ID provided');
     loading.value = false;
@@ -355,7 +393,23 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
   };
   
   try {
-    const response = await $fetch(`/api/steam/achievements?gameId=${gameId}${forceRefresh ? '&forceRefresh=true' : ''}`);
+    const response = await $fetch<{
+      achievements?: any[];
+      cached?: boolean;
+      isPrivate?: boolean;
+      hasAchievements?: boolean;
+      isFallback?: boolean;
+    }>(`/api/steam/achievements?gameId=${gameId}${forceRefresh ? '&forceRefresh=true' : ''}`);
+    
+    // Add detailed logging for debugging
+    console.log('Achievement API response:', {
+      gameId,
+      hasAchievements: response.achievements && response.achievements.length > 0,
+      isPrivate: !!response.isPrivate,
+      cached: !!response.cached,
+      isFallback: !!response.isFallback,
+      sampleAchievement: response.achievements && response.achievements.length > 0 ? response.achievements[0] : null
+    });
     
     if (response.achievements && Array.isArray(response.achievements)) {
       achievements.value = response.achievements;
@@ -393,13 +447,69 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
   }
 };
 
-// Debug flag (safer than using process.env)
-const showDebugInfo = ref(false); // Set to true to show debug info
+// Debug flag
+const showDebugInfo = ref(false);
 
 // Add a refreshAchievements function
 const refreshAchievements = () => {
   if (props.game?.appid) {
     fetchAchievements(props.game.appid, true); // Pass true to force refresh
+  }
+};
+
+// Add a checkAchievement function
+const checkingAchievement = ref<string | null>(null);
+const checkedAchievement = ref<any>(null);
+
+const checkAchievement = async (achievementId: string) => {
+  if (!props.game?.appid) return;
+  
+  checkingAchievement.value = achievementId;
+  checkedAchievement.value = null;
+  
+  try {
+    const response = await $fetch<any>(`/api/steam/check-achievement?gameId=${props.game.appid}&achievementId=${achievementId}`);
+    
+    console.log('Achievement check result:', response);
+    checkedAchievement.value = response;
+    
+    // Show the result in an alert for now
+    alert(`Achievement "${response.achievement.name}" is ${response.achievement.unlocked ? 'UNLOCKED' : 'LOCKED'} according to Steam API directly.`);
+    
+    // Update the achievement in the list if it's different
+    const index = achievements.value.findIndex(a => a.achievementId === achievementId);
+    if (index !== -1 && achievements.value[index].unlocked !== response.achievement.unlocked) {
+      achievements.value[index].unlocked = response.achievement.unlocked;
+      achievements.value[index].unlockTime = response.achievement.unlockTime;
+    }
+  } catch (error) {
+    console.error('Error checking achievement:', error);
+    alert('Error checking achievement status. See console for details.');
+  } finally {
+    checkingAchievement.value = null;
+  }
+};
+
+// Add checkAllAchievements function
+const checkingAll = ref(false);
+
+const checkAllAchievements = async () => {
+  if (!props.game?.appid || achievements.value.length === 0) return;
+  
+  checkingAll.value = true;
+  
+  try {
+    // Force refresh achievements directly from Steam API
+    await fetchAchievements(props.game.appid, true);
+    
+    // Show a message about the results
+    const unlockedCount = achievements.value.filter(a => a.unlocked).length;
+    alert(`Verified ${achievements.value.length} achievements directly from Steam API.\n${unlockedCount} achievements are unlocked.`);
+  } catch (error) {
+    console.error('Error checking all achievements:', error);
+    alert('Error checking all achievements. See console for details.');
+  } finally {
+    checkingAll.value = false;
   }
 };
 </script> 
