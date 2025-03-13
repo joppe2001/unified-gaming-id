@@ -4,6 +4,9 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { createFirebaseCustomToken } from '~/server/utils/auth';
 
 export default defineEventHandler(async (event) => {
+  // Get runtime config
+  const config = useRuntimeConfig();
+  
   const query = getQuery(event);
   const cookies = parseCookies(event);
   const userId = cookies.steam_auth_state;
@@ -32,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
     
     // Get Steam user info
-    const steamApiKey = process.env.STEAM_API_KEY;
+    const steamApiKey = config.public.steamApiKey;
     const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamApiKey}&steamids=${steamId}`);
     const steamUserData = steamUserResponse.data.response.players[0];
     

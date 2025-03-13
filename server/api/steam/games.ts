@@ -4,6 +4,9 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
 export default defineEventHandler(async (event) => {
+  // Get runtime config
+  const config = useRuntimeConfig();
+  
   // Get Firebase ID token from cookies to identify the user
   const cookies = parseCookies(event);
   const idToken = cookies.idToken;
@@ -43,8 +46,8 @@ export default defineEventHandler(async (event) => {
       });
     }
     
-    // Get Steam API key from environment variables
-    const steamApiKey = process.env.STEAM_API_KEY;
+    // Get Steam API key from runtime config
+    const steamApiKey = config.public.steamApiKey;
     
     if (!steamApiKey) {
       return createError({

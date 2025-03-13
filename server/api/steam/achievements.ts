@@ -4,6 +4,9 @@ import { getAuth } from 'firebase-admin/auth';
 import axios from 'axios';
 
 export default defineEventHandler(async (event) => {
+  // Get runtime config
+  const config = useRuntimeConfig();
+  
   // Get query parameters
   const query = getQuery(event);
   const gameId = query.gameId as string;
@@ -56,8 +59,8 @@ export default defineEventHandler(async (event) => {
     }
     
     
-    // Get Steam API key from environment variables
-    const steamApiKey = process.env.STEAM_API_KEY;
+    // Get Steam API key from runtime config
+    const steamApiKey = config.public.steamApiKey;
     
     if (!steamApiKey) {
       return createError({

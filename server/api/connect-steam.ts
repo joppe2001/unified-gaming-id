@@ -3,8 +3,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
 export default defineEventHandler(async (event) => {
-  // Define base URL for redirects
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  // Get runtime config to access the base URL
+  const config = useRuntimeConfig();
+  
+  // Define base URL for redirects - use the runtime config value
+  const baseUrl = config.public.baseUrl;
   
   // Redirect URL back to our app after authentication
   const redirectUri = `${baseUrl}/api/steam-callback`;
