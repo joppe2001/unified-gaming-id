@@ -210,7 +210,7 @@
           
           <!-- List view -->
           <ul v-if="viewMode === 'list'" class="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-            <li v-for="game in sortedGames" :key="game.appid" class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+            <li v-for="game in sortedGames" :key="game.appid" @click="viewGameDetails(game)" class="cursor-pointer px-4 py-4 sm:px-6 hover:bg-gray-50">
               <div class="flex flex-col sm:flex-row sm:items-center">
                 <div class="flex-shrink-0 h-24 w-full sm:h-16 sm:w-32 bg-gray-200 rounded overflow-hidden mb-3 sm:mb-0">
                   <img 
@@ -246,7 +246,7 @@
                 <div class="mt-3 sm:mt-0">
                   <button 
                     @click="viewGameDetails(game)"
-                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    class="inline-flex items-center px-3 py-1 cursor-pointer border border-transparent text-sm leading-5 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     Details
                   </button>
@@ -260,7 +260,7 @@
           
           <!-- Grid view -->
           <div v-else class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto">
-            <div v-for="game in sortedGames" :key="game.appid" class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
+            <div v-for="game in sortedGames" :key="game.appid" @click="viewGameDetails(game)" class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer">
               <div class="h-24 sm:h-32 bg-gray-200 overflow-hidden">
                 <img 
                   v-if="!game.imageError" 
@@ -283,7 +283,7 @@
                 </p>
                 <button 
                   @click="viewGameDetails(game)"
-                  class="mt-2 w-full inline-flex justify-center items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  class="mt-2 w-full inline-flex justify-center cursor-pointer items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Details
                 </button>
