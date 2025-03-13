@@ -245,7 +245,7 @@ import { useFirebase } from '~/composables/useFirebase';
 
 const { user } = useFirebase();
 const loading = ref(true);
-const games = ref([]);
+const games = ref<any[]>([]);
 const searchQuery = ref('');
 const selectedGame = ref(null);
 const showGameModal = ref(false);
@@ -318,7 +318,6 @@ const formatDate = (timestamp) => {
 
 // View game details
 const viewGameDetails = (game) => {
-  console.log('Opening game details for:', game.name, game.appid);
   // Create a deep copy of the game object to avoid reference issues
   selectedGame.value = JSON.parse(JSON.stringify(game));
   showGameModal.value = true;
@@ -326,7 +325,6 @@ const viewGameDetails = (game) => {
 
 // Close game modal
 const closeGameModal = () => {
-  console.log('Closing game details modal');
   showGameModal.value = false;
   // Wait a bit before clearing the selected game to avoid UI flicker
   setTimeout(() => {

@@ -46,31 +46,8 @@ const router = useRouter();
 const { user, signOut: firebaseSignOut } = useFirebase();
 const profileImage = ref(null);
 
-// Log user data for debugging
-onMounted(() => {
-  if (user.value) {
-    console.log('User data in MainUserProfile:', {
-      displayName: user.value.displayName,
-      email: user.value.email,
-      photoURL: user.value.photoURL
-    });
-  }
-});
-
-// Watch for changes to user data
-watch(() => user.value, (newUser) => {
-  if (newUser) {
-    console.log('User data updated in MainUserProfile:', {
-      displayName: newUser.displayName,
-      email: newUser.email,
-      photoURL: newUser.photoURL
-    });
-  }
-}, { immediate: true });
-
 // Handle image loading errors
 const handleImageError = (event) => {
-  console.error('Error loading profile image:', user.value?.photoURL);
   // Fall back to initials if image fails to load
   event.target.style.display = 'none';
   // Force re-render of the component to show initials

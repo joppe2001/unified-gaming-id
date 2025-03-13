@@ -94,20 +94,8 @@ const { user, loading, logout } = useFirebase();
 const profile = ref(null);
 const profileImage = ref(null);
 
-// Log user data for debugging
-onMounted(() => {
-  if (user.value) {
-    console.log('User data in Profile page:', {
-      displayName: user.value.displayName,
-      email: user.value.email,
-      photoURL: user.value.photoURL
-    });
-  }
-});
-
 // Handle image loading errors
 const handleImageError = (event) => {
-  console.error('Error loading profile image:', user.value?.photoURL);
   // Fall back to initials if image fails to load
   event.target.style.display = 'none';
 };
@@ -118,7 +106,6 @@ const fetchProfile = async () => {
   
   try {
     profile.value = await $fetch('/api/user/profile');
-    console.log('Fetched profile data:', profile.value);
   } catch (error) {
     console.error('Error fetching profile:', error);
     // Set a default empty profile to prevent errors
@@ -161,7 +148,6 @@ const formatDate = (timestamp) => {
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date value:', timestamp);
       return 'Invalid date';
     }
     

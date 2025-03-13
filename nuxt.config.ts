@@ -15,6 +15,11 @@ export default defineNuxtConfig({
     firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
     
+    // Firebase Admin SDK variables
+    firebaseAdminProjectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+    firebaseAdminClientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+    firebaseAdminPrivateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+    
     // Public variables that are also available client-side
     public: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
@@ -25,6 +30,7 @@ export default defineNuxtConfig({
       firebaseAppId: process.env.FIREBASE_APP_ID,
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
       steamApiKey: process.env.STEAM_API_KEY,
+      riotApiKey: process.env.RIOT_API_KEY,
       baseUrl: process.env.BASE_URL || 'http://localhost:3000',
     }
   }

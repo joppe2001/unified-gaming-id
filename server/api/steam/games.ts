@@ -57,14 +57,12 @@ export default defineEventHandler(async (event) => {
     const response = await axios.get(
       `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${steamApiKey}&steamid=${steamId}&include_appinfo=1&include_played_free_games=1`
     ).catch(error => {
-      console.log(`Error fetching games for user ${steamId}:`, error.message);
       // Return null to indicate error but continue execution
       return null;
     });
     
     // Check if response is valid
     if (!response || !response.data || !response.data.response) {
-      console.log(`Invalid response from Steam API for user ${steamId}`);
       return {
         games: []
       };
@@ -74,7 +72,6 @@ export default defineEventHandler(async (event) => {
     const recentGamesResponse = await axios.get(
       `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/?key=${steamApiKey}&steamid=${steamId}`
     ).catch(error => {
-      console.log(`Error fetching recent games for user ${steamId}:`, error.message);
       return null;
     });
     

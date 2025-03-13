@@ -1,12 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
     <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-      <h1 class="text-3xl font-bold text-center mb-6">Login</h1>
-      
-      <p class="text-gray-600 text-center mb-8">
-        Sign in or create an account to connect your gaming profiles.
-      </p>
-      
+    
       <div v-if="loading" class="flex justify-center items-center py-8">
         <svg class="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -18,7 +13,6 @@
       <div v-else class="space-y-6">
         <!-- Firebase Authentication -->
         <div>
-          <h2 class="text-xl font-semibold mb-4">Account Login</h2>
           <FirebaseLogin />
         </div>
         

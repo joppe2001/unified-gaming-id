@@ -9,10 +9,7 @@ export default defineEventHandler(async (event) => {
   const gameId = query.gameId as string;
   const forceRefresh = query.forceRefresh === 'true';
   
-  console.log(`Achievement request for game ID: ${gameId}${forceRefresh ? ' (force refresh)' : ''}`);
-  
   if (!gameId) {
-    console.log('No game ID provided');
     return createError({
       statusCode: 400,
       statusMessage: 'Game ID is required'
@@ -24,7 +21,6 @@ export default defineEventHandler(async (event) => {
   const idToken = cookies.idToken;
   
   if (!idToken) {
-    console.log('No ID token found in cookies');
     return createError({
       statusCode: 401,
       statusMessage: 'Not authenticated'
@@ -35,7 +31,6 @@ export default defineEventHandler(async (event) => {
     // Verify the token and get user
     const decodedToken = await getAuth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
-    console.log(`Authenticated user: ${userId}`);
     
     // Get Firestore instance
     const db = getFirestore();
@@ -44,7 +39,6 @@ export default defineEventHandler(async (event) => {
     const userDoc = await db.collection('users').doc(userId).get();
     
     if (!userDoc.exists) {
-      console.log(`User document not found for ID: ${userId}`);
       return createError({
         statusCode: 404,
         statusMessage: 'User not found'
@@ -55,20 +49,17 @@ export default defineEventHandler(async (event) => {
     const steamId = userData?.connectedAccounts?.steam?.steamId;
     
     if (!steamId) {
-      console.log('No Steam ID found in user document');
       return createError({
         statusCode: 400,
         statusMessage: 'Steam account not connected'
       });
     }
     
-    console.log(`Found Steam ID: ${steamId} for game: ${gameId}`);
     
     // Get Steam API key from environment variables
     const steamApiKey = process.env.STEAM_API_KEY;
     
     if (!steamApiKey) {
-      console.log('No Steam API key configured');
       return createError({
         statusCode: 500,
         statusMessage: 'Steam API key not configured'
@@ -88,7 +79,6 @@ export default defineEventHandler(async (event) => {
       const cacheAge = Date.now() - cacheTime.getTime();
       
       if (cacheAge < 24 * 60 * 60 * 1000) { // 24 hours in milliseconds
-        console.log(`Using cached achievements for game ${gameId}`);
         
         // Ensure the cached achievements array is valid
         const cachedAchievements = Array.isArray(cachedData.achievements) ? cachedData.achievements : [];
@@ -105,7 +95,6 @@ export default defineEventHandler(async (event) => {
     const gameDetailsResponse = await axios.get(
       `https://store.steampowered.com/api/appdetails?appids=${gameId}`
     ).catch(error => {
-      console.log(`Error fetching game details for ${gameId}:`, error.message);
       return null;
     });
     
@@ -113,7 +102,6 @@ export default defineEventHandler(async (event) => {
     const hasAchievements = gameDetails?.achievements?.total > 0;
     
     if (gameDetailsResponse && !hasAchievements) {
-      console.log(`Game ${gameId} does not have achievements according to Steam Store API`);
       return {
         achievements: [],
         hasAchievements: false
@@ -124,19 +112,16 @@ export default defineEventHandler(async (event) => {
     const achievementsResponse = await axios.get(
       `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${steamApiKey}&steamid=${steamId}&appid=${gameId}`
     ).catch(error => {
-      console.log(`Error fetching achievements for game ${gameId}:`, error.message);
       return null;
     });
     
     // Check if achievements are available
     if (!achievementsResponse || achievementsResponse.data?.playerstats?.success === false) {
-      console.log(`No achievements available for game ${gameId} or private profile`);
       
       // Try to get global achievement stats instead
       const globalStatsResponse = await axios.get(
         `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=${gameId}`
       ).catch(error => {
-        console.log(`Error fetching global achievement stats for game ${gameId}:`, error.message);
         return null;
       });
       
@@ -146,7 +131,6 @@ export default defineEventHandler(async (event) => {
         const schemaResponse = await axios.get(
           `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${steamApiKey}&appid=${gameId}`
         ).catch(error => {
-          console.log(`Error fetching achievement schema for game ${gameId}:`, error.message);
           return null;
         });
         
@@ -198,7 +182,6 @@ export default defineEventHandler(async (event) => {
     const schemaResponse = await axios.get(
       `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${steamApiKey}&appid=${gameId}`
     ).catch(error => {
-      console.log(`Error fetching achievement schema for game ${gameId}:`, error.message);
       return null;
     });
     
@@ -208,7 +191,6 @@ export default defineEventHandler(async (event) => {
     const globalStatsResponse = await axios.get(
       `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=${gameId}`
     ).catch(error => {
-      console.log(`Error fetching global achievement stats for game ${gameId}:`, error.message);
       return null;
     });
     

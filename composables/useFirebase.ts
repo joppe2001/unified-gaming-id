@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithCustomToken as firebaseSignInWithCustomToken,
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -110,6 +111,32 @@ export const useFirebase = () => {
     }
   };
 
+  // Sign in with Riot Games
+  const signInWithRiot = async (): Promise<UserCredential> => {
+    try {
+      const provider = new OAuthProvider('oidc.riotgames');
+      // Add scopes for Riot Games API access
+      provider.addScope('openid');
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Use signInWithPopup for Riot Games authentication
+      const result = await signInWithPopup(auth, provider);
+      
+      // Store the ID token in a cookie
+      if (result.user) {
+        await storeIdTokenInCookie(result.user);
+      }
+      
+      // Return the result
+      return result;
+    } catch (err) {
+      error.value = err as Error;
+      console.error('Error signing in with Riot Games:', err);
+      throw err;
+    }
+  };
+
   // Sign in with a custom token (for Steam authentication)
   const signInWithCustomToken = async (token: string): Promise<UserCredential> => {
     try {
@@ -204,6 +231,7 @@ export const useFirebase = () => {
     signInWithEmail,
     createUser,
     signInWithGoogle,
+    signInWithRiot,
     signInWithCustomToken,
     signOut
   };

@@ -203,8 +203,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, defineProps, defineEmits } from 'vue';
-
 const props = defineProps({
   show: {
     type: Boolean,
@@ -219,7 +217,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const loading = ref(false);
-const achievements = ref([]);
+const achievements = ref<any[]>([]);
 const achievementsInfo = ref({
   isPrivate: false,
   cached: false,
@@ -309,13 +307,10 @@ const close = () => {
 
 // Watch for show property changes
 watch(() => props.show, (newShow) => {
-  console.log(`Modal show state changed to: ${newShow}`);
   
   if (newShow && props.game?.appid) {
-    console.log(`Modal opened with game: ${props.game.name} (${props.game.appid})`);
     fetchAchievements(props.game.appid);
   } else if (!newShow) {
-    console.log('Modal closed, resetting state');
     // Reset state when modal is closed
     setTimeout(() => {
       achievements.value = [];
@@ -326,7 +321,6 @@ watch(() => props.show, (newShow) => {
 
 // Fetch achievements when game changes
 watch(() => props.game, async (newGame) => {
-  console.log('Game object changed:', newGame?.name);
   
   if (newGame && props.show) {
     if (!newGame.appid) {
@@ -335,7 +329,6 @@ watch(() => props.game, async (newGame) => {
       return;
     }
     
-    console.log('Game changed, fetching achievements for:', newGame.name, newGame.appid);
     await fetchAchievements(newGame.appid);
   } else if (!newGame && props.show) {
     console.warn('Game object is null or undefined but modal is shown');
@@ -352,7 +345,6 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
     return;
   }
   
-  console.log(`Setting loading state to true for game ${gameId}${forceRefresh ? ' (force refresh)' : ''}`);
   loading.value = true;
   achievements.value = []; // Reset achievements
   achievementsInfo.value = {
@@ -363,9 +355,7 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
   };
   
   try {
-    console.log(`Fetching achievements for game ${gameId}...`);
     const response = await $fetch(`/api/steam/achievements?gameId=${gameId}${forceRefresh ? '&forceRefresh=true' : ''}`);
-    console.log('Achievement response received:', response);
     
     if (response.achievements && Array.isArray(response.achievements)) {
       achievements.value = response.achievements;
@@ -378,7 +368,6 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
         isFallback: !!response.isFallback
       };
       
-      console.log(`Loaded ${achievements.value.length} achievements. Cached: ${achievementsInfo.value.cached}, Private: ${achievementsInfo.value.isPrivate}`);
     } else {
       console.warn('Invalid achievements data format:', response);
       achievements.value = [];
@@ -400,7 +389,6 @@ const fetchAchievements = async (gameId, forceRefresh = false) => {
     
     achievementsInfo.value.isFallback = true;
   } finally {
-    console.log(`Setting loading state to false for game ${gameId}`);
     loading.value = false;
   }
 };
@@ -411,7 +399,6 @@ const showDebugInfo = ref(false); // Set to true to show debug info
 // Add a refreshAchievements function
 const refreshAchievements = () => {
   if (props.game?.appid) {
-    console.log(`Manually refreshing achievements for game ${props.game.appid}`);
     fetchAchievements(props.game.appid, true); // Pass true to force refresh
   }
 };

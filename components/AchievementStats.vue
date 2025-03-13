@@ -72,7 +72,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, defineProps } from 'vue';
 
 const props = defineProps({
   gameId: {
