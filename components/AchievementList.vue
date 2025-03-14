@@ -1,49 +1,51 @@
 <template>
   <div>
-    <div v-if="loading" class="py-4 text-center text-gray-500">
-      <svg class="animate-spin h-6 w-6 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <div v-if="loading" class="py-4 text-center text-gray-400">
+      <svg class="animate-spin h-6 w-6 mx-auto text-blue-400 filter drop-shadow-glow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
       <span class="mt-2 block">Loading achievements...</span>
     </div>
-    <div v-else-if="achievements.length === 0" class="py-4 text-center text-gray-500">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div v-else-if="achievements.length === 0" class="py-4 text-center text-gray-400">
+      <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p class="mt-2">No achievements available for this game.</p>
     </div>
     <div v-else>
       <!-- Achievement stats -->
-      <div v-if="achievements.length > 0" class="mb-4 bg-gray-50 p-3 rounded-lg">
+      <div v-if="achievements.length > 0" class="mb-4 bg-gray-900/50 p-3 rounded-lg border border-gray-700 shadow-glow">
         <div class="flex flex-wrap gap-4 justify-between">
           <div>
-            <div class="text-sm font-medium text-gray-500">Total Achievements</div>
-            <div class="text-xl font-semibold text-gray-900">{{ achievements.length }}</div>
+            <div class="text-sm font-medium text-gray-400">Total Achievements</div>
+            <div class="text-xl font-semibold text-blue-300">{{ achievements.length }}</div>
           </div>
           <div v-if="!isPrivate">
-            <div class="text-sm font-medium text-gray-500">Unlocked</div>
-            <div class="text-xl font-semibold text-gray-900">
+            <div class="text-sm font-medium text-gray-400">Unlocked</div>
+            <div class="text-xl font-semibold text-green-300">
               {{ unlockedCount }} 
               <span class="text-sm text-gray-500">({{ unlockedPercentage }}%)</span>
             </div>
           </div>
           <div v-if="!isPrivate && hasUnlockTimes">
-            <div class="text-sm font-medium text-gray-500">Last Unlocked</div>
-            <div class="text-xl font-semibold text-gray-900">{{ formatDate(lastUnlockedTime) }}</div>
+            <div class="text-sm font-medium text-gray-400">Last Unlocked</div>
+            <div class="text-xl font-semibold text-yellow-300">{{ formatDate(lastUnlockedTime) }}</div>
           </div>
         </div>
       </div>
       
       <!-- Achievement list -->
-      <div class="mt-2 grid grid-cols-1 gap-2">
+      <div class="mt-2 grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-1">
         <div 
           v-for="achievement in achievements" 
           :key="achievement.achievementId" 
-          class="flex items-center p-3 rounded-md"
-          :class="achievement.unlocked ? 'bg-green-50' : 'bg-gray-50'"
+          class="flex items-center p-3 rounded-lg border transition-colors"
+          :class="achievement.unlocked 
+            ? 'bg-green-900/30 border-green-700 hover:bg-green-900/40' 
+            : 'bg-gray-900/50 border-gray-700 hover:bg-gray-800/50'"
         >
-          <div class="flex-shrink-0 h-12 w-12 rounded overflow-hidden bg-gray-200">
+          <div class="flex-shrink-0 h-12 w-12 rounded overflow-hidden bg-gray-900 border border-gray-700">
             <img 
               :src="achievement.unlocked ? achievement.iconUrl : (achievement.iconGrayUrl || achievement.iconUrl)" 
               :alt="achievement.name" 
@@ -52,31 +54,33 @@
             />
           </div>
           <div class="ml-3 flex-1">
-            <p class="text-sm font-medium" :class="achievement.unlocked ? 'text-green-800' : 'text-gray-700'">
+            <p class="text-sm font-medium" :class="achievement.unlocked ? 'text-green-300' : 'text-gray-300'">
               {{ achievement.name }}
             </p>
-            <p class="text-xs text-gray-500">{{ achievement.description }}</p>
+            <p class="text-xs text-gray-400">{{ achievement.description }}</p>
             <div class="mt-1 flex items-center">
               <div class="flex-1">
-                <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                   <div 
                     class="h-full rounded-full" 
-                    :class="achievement.unlocked ? 'bg-green-500' : 'bg-blue-400'"
+                    :class="achievement.unlocked ? 'bg-green-500' : 'bg-blue-600'"
                     :style="`width: ${achievement.globalPercentage || 0}%`"
                   ></div>
                 </div>
               </div>
-              <span class="ml-2 text-xs text-gray-500">{{ formatPercentage(achievement.globalPercentage) }}% of players</span>
+              <span class="ml-2 text-xs text-gray-400">{{ formatPercentage(achievement.globalPercentage) }}% of players</span>
             </div>
           </div>
           <div class="ml-4 flex flex-col items-end">
             <span 
-              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-              :class="achievement.unlocked ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border"
+              :class="achievement.unlocked 
+                ? 'bg-green-900/50 text-green-300 border-green-700' 
+                : 'bg-gray-900/50 text-gray-300 border-gray-700'"
             >
               {{ achievement.unlocked ? 'Unlocked' : 'Locked' }}
             </span>
-            <span v-if="achievement.unlocked && achievement.unlockTime" class="text-xs text-gray-500 mt-1">
+            <span v-if="achievement.unlocked && achievement.unlockTime" class="text-xs text-gray-400 mt-1">
               {{ formatDate(achievement.unlockTime) }}
             </span>
           </div>

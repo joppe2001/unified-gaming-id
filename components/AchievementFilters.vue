@@ -1,15 +1,17 @@
 <template>
   <div>
     <!-- Filter controls - restructured for better mobile experience -->
-    <div class="mb-4 space-y-3 sm:space-y-0">
+    <div class="mb-4 space-y-3 sm:space-y-0 flex flex-col lg:flex-row">
       <!-- Filter section -->
       <div class="flex flex-wrap items-center gap-2">
-        <div class="text-sm font-medium text-gray-700 w-full sm:w-auto">Filter:</div>
+        <div class="text-sm font-medium text-gray-400 w-full sm:w-auto">Filter:</div>
         <div class="flex flex-wrap gap-2">
           <button 
             @click="toggleFilter('unlocked')" 
-            class="text-xs px-3 py-1.5 rounded cursor-pointer flex items-center"
-            :class="activeFilter === 'unlocked' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="text-xs px-3 py-1.5 rounded-md cursor-pointer flex items-center transition-colors border"
+            :class="activeFilter === 'unlocked' 
+              ? 'bg-green-900/50 text-green-300 border-green-700' 
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             Unlocked
             <svg v-if="activeFilter === 'unlocked'" class="h-3 w-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -18,8 +20,10 @@
           </button>
           <button 
             @click="toggleFilter('locked')" 
-            class="text-xs px-3 py-1.5 rounded cursor-pointer flex items-center"
-            :class="activeFilter === 'locked' ? 'bg-gray-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="text-xs px-3 py-1.5 rounded-md cursor-pointer flex items-center transition-colors border"
+            :class="activeFilter === 'locked' 
+              ? 'bg-gray-900/50 text-gray-300 border-gray-600' 
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             Locked
             <svg v-if="activeFilter === 'locked'" class="h-3 w-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -31,12 +35,14 @@
       
       <!-- Sort section -->
       <div class="flex flex-wrap items-center gap-2">
-        <div class="text-sm font-medium text-gray-700 w-full sm:w-auto sm:ml-4">Sort by:</div>
+        <div class="text-sm font-medium text-gray-400 w-full sm:w-auto sm:ml-4">Sort by:</div>
         <div class="flex flex-wrap gap-2">
           <button 
             @click="toggleSort('name')" 
-            class="text-xs px-3 py-1.5 rounded cursor-pointer flex items-center"
-            :class="activeSort === 'name' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="text-xs px-3 py-1.5 rounded-md cursor-pointer flex items-center transition-colors border"
+            :class="activeSort === 'name' 
+              ? 'bg-blue-900/50 text-blue-300 border-blue-700' 
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             Name
             <svg v-if="activeSort === 'name'" class="h-3 w-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,8 +51,10 @@
           </button>
           <button 
             @click="toggleSort('rarity')" 
-            class="text-xs px-3 py-1.5 rounded cursor-pointer flex items-center"
-            :class="activeSort === 'rarity' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="text-xs px-3 py-1.5 rounded-md cursor-pointer flex items-center transition-colors border"
+            :class="activeSort === 'rarity' 
+              ? 'bg-blue-900/50 text-blue-300 border-blue-700' 
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             Rarity
             <svg v-if="activeSort === 'rarity'" class="h-3 w-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -56,8 +64,10 @@
           <button 
             v-if="hasUnlockTimes"
             @click="toggleSort('date')" 
-            class="text-xs px-3 py-1.5 rounded cursor-pointer flex items-center"
-            :class="activeSort === 'date' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="text-xs px-3 py-1.5 rounded-md cursor-pointer flex items-center transition-colors border"
+            :class="activeSort === 'date' 
+              ? 'bg-blue-900/50 text-blue-300 border-blue-700' 
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             Unlock Date
             <svg v-if="activeSort === 'date'" class="h-3 w-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,8 +77,10 @@
           
           <button 
             @click="toggleSortOrder" 
-            class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded flex items-center hover:bg-gray-200 cursor-pointer"
-            :class="{ 'bg-blue-100 text-blue-700': activeSort !== 'default' }"
+            class="text-xs px-3 py-1.5 rounded-md flex items-center cursor-pointer transition-colors border"
+            :class="activeSort !== 'default'
+              ? 'bg-blue-900/50 text-blue-300 border-blue-700 hover:bg-blue-800/50'
+              : 'bg-gray-900/50 text-gray-300 border-gray-700 hover:bg-gray-800/50'"
           >
             <svg 
               class="h-3 w-3 mr-1" 
@@ -92,12 +104,12 @@
           type="text" 
           v-model="searchQuery" 
           placeholder="Search achievements..." 
-          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-md text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           @input="updateSearch"
         />
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
           <svg 
-            class="h-4 w-4 text-gray-400" 
+            class="h-4 w-4 text-gray-500" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"
@@ -111,7 +123,7 @@
           class="absolute inset-y-0 right-8 pr-3 flex items-center cursor-pointer"
           aria-label="Clear search"
         >
-          <svg class="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="h-4 w-4 text-gray-500 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -120,27 +132,27 @@
     
     <!-- Active filters display -->
     <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap gap-2 items-center">
-      <div class="text-sm text-gray-600 w-full sm:w-auto mb-1 sm:mb-0">Active filters:</div>
+      <div class="text-sm text-gray-400 w-full sm:w-auto mb-1 sm:mb-0">Active filters:</div>
       <div class="flex flex-wrap gap-2">
-        <div v-if="activeFilter !== 'all'" class="flex items-center bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded">
+        <div v-if="activeFilter !== 'all'" class="flex items-center bg-blue-900/30 text-blue-300 text-xs px-3 py-1.5 rounded-md border border-blue-700">
           {{ activeFilter === 'unlocked' ? 'Unlocked only' : 'Locked only' }}
-          <button @click="clearFilter" class="ml-2 text-blue-500 hover:text-blue-700 cursor-pointer">
+          <button @click="clearFilter" class="ml-2 text-blue-400 hover:text-blue-300 cursor-pointer">
             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div v-if="activeSort !== 'default'" class="flex items-center bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded">
+        <div v-if="activeSort !== 'default'" class="flex items-center bg-blue-900/30 text-blue-300 text-xs px-3 py-1.5 rounded-md border border-blue-700">
           Sorted by {{ getSortLabel() }} ({{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }})
-          <button @click="clearSort" class="ml-2 text-blue-500 hover:text-blue-700 cursor-pointer">
+          <button @click="clearSort" class="ml-2 text-blue-400 hover:text-blue-300 cursor-pointer">
             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div v-if="searchQuery" class="flex items-center bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded">
+        <div v-if="searchQuery" class="flex items-center bg-blue-900/30 text-blue-300 text-xs px-3 py-1.5 rounded-md border border-blue-700">
           Search: "{{ searchQuery }}"
-          <button @click="clearSearch" class="ml-2 text-blue-500 hover:text-blue-700 cursor-pointer">
+          <button @click="clearSearch" class="ml-2 text-blue-400 hover:text-blue-300 cursor-pointer">
             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -150,7 +162,7 @@
     </div>
     
     <!-- Achievement count after filtering -->
-    <div v-if="filteredCount !== totalCount" class="mb-4 text-sm text-gray-600">
+    <div v-if="filteredCount !== totalCount" class="mb-4 text-sm text-gray-400">
       Showing {{ filteredCount }} of {{ totalCount }} achievements
     </div>
   </div>

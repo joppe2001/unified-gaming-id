@@ -2,48 +2,49 @@
   <div class="firebase-login space-y-6">
     <!-- Page Title -->
     <div class="text-center">
-      <h2 class="text-2xl font-bold">{{ showRegisterForm ? 'Create Account' : 'Login' }}</h2>
-      <p class="text-gray-600 mt-2">{{ showRegisterForm ? 'Create a new account to get started' : 'Sign in to connect your gaming profiles' }}</p>
+      <h2 class="text-2xl font-bold text-blue-300 gaming-text">{{ showRegisterForm ? 'Create Account' : 'Login' }}</h2>
+      <p class="text-gray-400 mt-2">{{ showRegisterForm ? 'Create a new account to get started' : 'Sign in to connect your gaming profiles' }}</p>
     </div>
     
     <!-- Email/Password Login Form -->
-    <div v-if="!showRegisterForm" class="bg-white p-6 rounded-lg shadow-md">
+    <div v-if="!showRegisterForm" class="bg-gray-800 bg-opacity-70 p-6 rounded-lg border border-gray-700 shadow-glow-sm">
       <form @submit.prevent="signInWithEmail" class="space-y-4">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label for="email" class="block text-sm font-medium text-blue-300 mb-1">Email</label>
           <input 
             id="email" 
             v-model="email" 
             type="email" 
             required 
             autocomplete="email"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="your@email.com"
           />
         </div>
         
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label for="password" class="block text-sm font-medium text-blue-300 mb-1">Password</label>
           <input 
             id="password" 
             v-model="password" 
             type="password" 
             required 
             autocomplete="current-password"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="••••••••"
           />
         </div>
         
-        <div v-if="error" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div v-if="error" class="p-3 bg-red-900 bg-opacity-50 border border-red-700 text-red-200 rounded">
           {{ error }}
         </div>
         
         <button 
           type="submit" 
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 rounded transition-colors relative overflow-hidden group"
           :disabled="loading"
         >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-20 group-hover:-translate-x-full"></span>
           <span v-if="loading" class="flex items-center justify-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -58,7 +59,7 @@
           <button 
             type="button" 
             @click="showRegisterForm = true" 
-            class="text-blue-600 hover:text-blue-800 text-sm"
+            class="text-blue-400 hover:text-blue-300 text-sm transition-colors"
           >
             Don't have an account? Create one
           </button>
@@ -67,36 +68,36 @@
     </div>
     
     <!-- Registration Form -->
-    <div v-if="showRegisterForm" class="bg-white p-6 rounded-lg shadow-md">
+    <div v-if="showRegisterForm" class="bg-gray-800 bg-opacity-70 p-6 rounded-lg border border-gray-700 shadow-glow-sm">
       <form @submit.prevent="registerWithEmail" class="space-y-4">
         <div>
-          <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label for="register-email" class="block text-sm font-medium text-blue-300 mb-1">Email</label>
           <input 
             id="register-email" 
             v-model="registerEmail" 
             type="email" 
             required 
             autocomplete="email"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="your@email.com"
           />
         </div>
         
         <div>
-          <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label for="register-password" class="block text-sm font-medium text-blue-300 mb-1">Password</label>
           <input 
             id="register-password" 
             v-model="registerPassword" 
             type="password" 
             required 
             autocomplete="new-password"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="••••••••"
             @input="checkPasswordStrength"
           />
           <div v-if="registerPassword" class="mt-2">
             <div class="flex items-center">
-              <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   class="h-full transition-all duration-300"
                   :class="{
@@ -108,9 +109,9 @@
                 ></div>
               </div>
               <span class="ml-2 text-sm" :class="{
-                'text-red-500': passwordStrength === 'weak',
-                'text-yellow-500': passwordStrength === 'medium',
-                'text-green-500': passwordStrength === 'strong'
+                'text-red-400': passwordStrength === 'weak',
+                'text-yellow-400': passwordStrength === 'medium',
+                'text-green-400': passwordStrength === 'strong'
               }">{{ passwordStrength }}</span>
             </div>
             <p class="text-xs text-gray-500 mt-1">
@@ -120,43 +121,44 @@
         </div>
         
         <div>
-          <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+          <label for="confirm-password" class="block text-sm font-medium text-blue-300 mb-1">Confirm Password</label>
           <input 
             id="confirm-password" 
             v-model="confirmPassword" 
             type="password" 
             required 
             autocomplete="new-password"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="••••••••"
           />
-          <p v-if="confirmPassword && confirmPassword !== registerPassword" class="text-xs text-red-500 mt-1">
+          <p v-if="confirmPassword && confirmPassword !== registerPassword" class="text-xs text-red-400 mt-1">
             Passwords do not match
           </p>
         </div>
         
         <div>
-          <label for="display-name" class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+          <label for="display-name" class="block text-sm font-medium text-blue-300 mb-1">Gamer Tag</label>
           <input 
             id="display-name" 
             v-model="displayName" 
             type="text" 
             required 
             autocomplete="name"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Your Name"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Your Gamer Tag"
           />
         </div>
         
-        <div v-if="registerError" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div v-if="registerError" class="p-3 bg-red-900 bg-opacity-50 border border-red-700 text-red-200 rounded">
           {{ registerError }}
         </div>
         
         <button 
           type="submit" 
-          class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          class="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 rounded transition-colors relative overflow-hidden group"
           :disabled="registerLoading"
         >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-20 group-hover:-translate-x-full"></span>
           <span v-if="registerLoading" class="flex items-center justify-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -171,7 +173,7 @@
           <button 
             type="button" 
             @click="showRegisterForm = false" 
-            class="text-blue-600 hover:text-blue-800 text-sm"
+            class="text-blue-400 hover:text-blue-300 text-sm transition-colors"
           >
             Already have an account? Sign in
           </button>
@@ -180,14 +182,15 @@
     </div>
     
     <!-- Social Login Buttons -->
-    <div v-if="!showRegisterForm" class="bg-white p-6 rounded-lg shadow-md">
-      <p class="text-center text-gray-600 mb-4">Or continue with</p>
+    <div v-if="!showRegisterForm" class="bg-gray-800 bg-opacity-70 p-6 rounded-lg border border-gray-700 shadow-glow-sm">
+      <p class="text-center text-gray-400 mb-4">Or continue with</p>
       <div class="flex flex-col space-y-3">
         <button 
           @click="handleGoogleSignIn" 
-          class="flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 border border-gray-300 rounded transition-colors"
+          class="flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-200 font-medium py-2 px-4 border border-gray-700 rounded transition-colors relative overflow-hidden group"
           :disabled="loading"
         >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-10 group-hover:-translate-x-full"></span>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
             <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
@@ -348,4 +351,17 @@ const handleRiotSignIn = async () => {
   }
   // Note: We don't need the finally block because the page will redirect
 };
-</script> 
+</script>
+
+<style>
+.shadow-glow-sm {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.gaming-text {
+  background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+</style> 

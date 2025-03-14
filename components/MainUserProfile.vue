@@ -1,95 +1,144 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-2xl font-bold mb-4">Your Profile</h2>
+  <div class="bg-gray-800 bg-opacity-70 rounded-xl shadow-glow border border-gray-700 overflow-hidden backdrop-blur-sm">
+    <div class="relative">
+      <!-- Profile Banner -->
+      <div class="h-32 bg-gradient-to-r from-blue-900 to-indigo-900 relative overflow-hidden">
+        <!-- Decorative elements -->
+        <div class="absolute top-0 right-0 w-24 h-24 bg-blue-400 rounded-full opacity-20 blur-lg pulse-slow"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-400 rounded-full opacity-20 blur-lg pulse-slow-delayed"></div>
+        
+        <!-- Grid overlay -->
+        <div class="absolute inset-0 bg-grid-gaming opacity-30"></div>
+      </div>
+      
+      <!-- Profile Avatar -->
+      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
+        <div class="relative">
+          <img 
+            :src="user?.photoURL || 'https://api.dicebear.com/6.x/bottts/svg?seed=' + (user?.displayName || user?.email || 'default')" 
+            alt="Profile Avatar" 
+            class="w-24 h-24 rounded-full border-4 border-gray-800 object-cover shadow-glow"
+          />
+          <div class="absolute inset-0 rounded-full border-2 border-blue-400 opacity-50 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
     
-    <div v-if="user" class="flex flex-col sm:flex-col items-center">
-      <div class="mb-4 relative">
-        <img 
-          v-if="user.photoURL" 
-          :src="user.photoURL" 
-          alt="Profile" 
-          class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-blue-500"
-          @error="handleImageError"
-          ref="profileImage"
-        />
-        <div 
-          v-else 
-          class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-2xl sm:text-3xl font-bold border-2 border-blue-500"
-        >
-          {{ userInitials }}
+    <!-- Profile Info -->
+    <div class="pt-16 pb-6 px-6 text-center">
+      <h2 class="text-xl font-bold text-white mb-1">{{ user?.displayName || 'Gamer' }}</h2>
+      <p class="text-gray-400 text-sm mb-4">{{ user?.email }}</p>
+      
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-2 mb-6">
+        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+          <div class="text-2xl font-bold text-blue-400">{{ connectedPlatformsCount }}</div>
+          <div class="text-xs text-gray-400">Platforms</div>
+        </div>
+        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+          <div class="text-2xl font-bold text-purple-400">{{ gamesCount }}</div>
+          <div class="text-xs text-gray-400">Games</div>
+        </div>
+        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+          <div class="text-2xl font-bold text-green-400">{{ achievementsCount }}</div>
+          <div class="text-xs text-gray-400">Achievements</div>
         </div>
       </div>
       
-      <h3 class="text-xl font-semibold text-center">{{ user.displayName || 'User' }}</h3>
-      <p class="text-gray-600 mb-4 text-center">{{ user.email || 'No email provided' }}</p>
-      
-      <!-- Only show logout button on desktop -->
-      <button 
-        @click="signOut" 
-        class="hidden sm:block mt-2 py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-      >
-        Sign Out
-      </button>
-    </div>
-    
-    <div v-else class="text-center py-4">
-      <p class="text-gray-500">Loading profile...</p>
+      <!-- Profile Actions -->
+      <div class="flex flex-col space-y-2">
+        <NuxtLink 
+          to="/profile" 
+          class="w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition flex items-center justify-center relative overflow-hidden group"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-10 group-hover:-translate-x-full"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+          Edit Profile
+        </NuxtLink>
+        <button 
+          @click="logout" 
+          class="w-full py-2 px-4 bg-red-900/50 hover:bg-red-800 text-white rounded-lg transition flex items-center justify-center relative overflow-hidden group"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-10 group-hover:-translate-x-full"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+          </svg>
+          Sign Out
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
-const { user, signOut: firebaseSignOut } = useFirebase();
-const profileImage = ref<HTMLImageElement | null>(null);
+const { user, signOut } = useFirebase();
+const profile = inject('profile', ref(null));
 
-// Handle image loading errors
-const handleImageError = (event: Event) => {
-  // Fall back to initials if image fails to load
-  if (event.target && event.target instanceof HTMLImageElement) {
-    event.target.style.display = 'none';
-  }
-  
-  // Force re-render of the component to show initials
-  if (user.value) {
-    // Create a new object with the same properties but null photoURL
-    const updatedUser = { ...user.value };
-    updatedUser.photoURL = null;
-    user.value = updatedUser;
-  }
-};
-
-// Get user initials for avatar fallback
-const userInitials = computed(() => {
-  if (!user.value) return '?';
-  
-  if (user.value.displayName) {
-    return user.value.displayName
-      .split(' ')
-      .map(name => name[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  }
-  
-  if (user.value.email) {
-    return user.value.email[0].toUpperCase();
-  }
-  
-  return '?';
+// Computed properties for stats
+const connectedPlatformsCount = computed(() => {
+  if (!profile.value?.connectedAccounts) return 0;
+  return Object.keys(profile.value.connectedAccounts).length;
 });
 
-// Sign out and redirect to login
-const signOut = async () => {
+const gamesCount = computed(() => {
+  return 0; // This would be populated from your actual data
+});
+
+const achievementsCount = computed(() => {
+  return 0; // This would be populated from your actual data
+});
+
+// Logout function
+const logout = async () => {
   try {
-    await firebaseSignOut();
-    router.push('/login');
+    await signOut();
+    navigateTo('/login');
   } catch (error) {
     console.error('Error signing out:', error);
   }
 };
-</script> 
+</script>
+
+<style scoped>
+.bg-grid-gaming {
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.gaming-text {
+  background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pulse-slow {
+  animation: pulse 4s infinite alternate;
+}
+
+.pulse-slow-delayed {
+  animation: pulse 4s infinite alternate-reverse;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.1;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(1.05);
+  }
+}
+</style> 

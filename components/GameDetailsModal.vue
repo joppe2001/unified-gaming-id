@@ -1,12 +1,21 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" @keydown.esc="close" tabindex="0" ref="modalRef">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Background overlay -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="close"></div>
+      <!-- Background overlay with blur effect -->
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-90 backdrop-blur-sm transition-opacity" aria-hidden="true" @click="close"></div>
 
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
-        <div v-if="game" class="bg-white">
+      <div class="inline-block align-bottom bg-gray-800 bg-opacity-90 rounded-xl text-left overflow-hidden shadow-glow transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-700">
+        <!-- Background elements for modal -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+          <!-- Animated grid lines -->
+          <div class="absolute inset-0 bg-grid-gaming opacity-10"></div>
+          
+          <!-- Glowing orb -->
+          <div class="glow-orb absolute top-1/4 right-1/4 w-32 h-32 rounded-full bg-blue-500 opacity-10 blur-3xl"></div>
+        </div>
+        
+        <div v-if="game" class="bg-gray-800 bg-opacity-90 relative z-10">
           <!-- Game header component -->
           <GameHeader :game="game" @close="close" />
           
@@ -14,11 +23,11 @@
           <div class="px-6 py-4">
             <div class="mt-6">
               <div class="flex justify-between items-center mb-2">
-                <h4 class="text-lg font-medium text-gray-900">Achievements</h4>
-                <div class="flex items-center space-x-2">
+                <h4 class="text-lg font-medium text-blue-300 gaming-text">Achievements</h4>
+                <div class="flex flex-wrap items-center gap-2">
                   <button 
                     @click="refreshAchievements" 
-                    class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded flex items-center hover:bg-gray-200"
+                    class="text-xs bg-gray-900/70 text-blue-300 px-2 py-1 rounded-md flex items-center hover:bg-gray-700/70 border border-gray-700 transition-colors"
                     :disabled="loading"
                   >
                     <svg 
@@ -34,7 +43,7 @@
                   </button>
                   <button 
                     @click="checkAllAchievements" 
-                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center hover:bg-blue-200"
+                    class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-md flex items-center hover:bg-blue-800/50 border border-blue-700 transition-colors"
                     :disabled="loading || checkingAll"
                   >
                     <svg 
@@ -51,7 +60,7 @@
                   <button 
                     v-if="achievementsInfo.isPrivate"
                     @click="forceAchievements" 
-                    class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center hover:bg-purple-200"
+                    class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded-md flex items-center hover:bg-purple-800/50 border border-purple-700 transition-colors"
                     :disabled="loading || forcingAchievements"
                   >
                     <svg 
@@ -65,10 +74,10 @@
                     </svg>
                     {{ forcingAchievements ? 'Fetching...' : 'Bypass Privacy' }}
                   </button>
-                  <div v-if="achievementsInfo.isPrivate" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                  <div v-if="achievementsInfo.isPrivate" class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded-md border border-yellow-700">
                     Private Profile Data
                   </div>
-                  <div v-else-if="achievementsInfo.bypassedPrivacy" class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                  <div v-else-if="achievementsInfo.bypassedPrivacy" class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded-md border border-purple-700">
                     Bypassed Privacy
                   </div>
                 </div>
@@ -104,7 +113,7 @@
           </div>
           
           <!-- Footer with debug panel -->
-          <div class="px-6 py-3 bg-gray-50">
+          <div class="px-6 py-3 bg-gray-900/50 border-t border-gray-700">
             <DebugPanel 
               :game="game"
               :achievements="achievements"
@@ -126,7 +135,7 @@
     <!-- Sticky close button for mobile -->
     <button 
       @click="close" 
-      class="fixed bottom-4 right-4 md:hidden bg-gray-800 bg-opacity-70 rounded-full p-3 text-white hover:bg-opacity-100 shadow-lg z-50"
+      class="fixed bottom-4 right-4 md:hidden bg-gray-800 bg-opacity-70 rounded-full p-3 text-blue-300 hover:bg-gray-700 shadow-glow z-50 border border-gray-700"
       aria-label="Close"
     >
       <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

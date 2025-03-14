@@ -1,26 +1,26 @@
 <template>
   <div>
-    <div v-if="showDebugInfo" class="text-left mb-4 p-2 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60">
-      <div><strong>Debug Info:</strong></div>
-      <div>Loading: {{ loading }}</div>
-      <div>Show: {{ show }}</div>
-      <div>Game ID: {{ game?.appid }}</div>
-      <div>Achievements: {{ achievements.length }}</div>
-      <div>Cached: {{ achievementsInfo.cached }}</div>
-      <div>Private: {{ achievementsInfo.isPrivate }}</div>
-      <div>Fallback: {{ achievementsInfo.isFallback }}</div>
-      <div>Bypassed Privacy: {{ achievementsInfo.bypassedPrivacy }}</div>
-      <div>Forced: {{ achievementsInfo.forced }}</div>
-      <div>Unlocked: {{ achievements.filter(a => a.unlocked).length }}</div>
-      <div v-if="achievements.length > 0">
-        <div class="mt-2"><strong>Sample Achievement:</strong></div>
+    <div v-if="showDebugInfo" class="text-left mb-4 p-2 bg-gray-900/70 rounded-lg text-xs font-mono overflow-auto max-h-60 border border-gray-700">
+      <div><strong class="text-blue-300">Debug Info:</strong></div>
+      <div class="text-gray-300">Loading: {{ loading }}</div>
+      <div class="text-gray-300">Show: {{ show }}</div>
+      <div class="text-gray-300">Game ID: {{ game?.appid }}</div>
+      <div class="text-gray-300">Achievements: {{ achievements.length }}</div>
+      <div class="text-gray-300">Cached: {{ achievementsInfo.cached }}</div>
+      <div class="text-gray-300">Private: {{ achievementsInfo.isPrivate }}</div>
+      <div class="text-gray-300">Fallback: {{ achievementsInfo.isFallback }}</div>
+      <div class="text-gray-300">Bypassed Privacy: {{ achievementsInfo.bypassedPrivacy }}</div>
+      <div class="text-gray-300">Forced: {{ achievementsInfo.forced }}</div>
+      <div class="text-gray-300">Unlocked: {{ achievements.filter(a => a.unlocked).length }}</div>
+      <div v-if="achievements.length > 0" class="text-gray-300">
+        <div class="mt-2"><strong class="text-blue-300">Sample Achievement:</strong></div>
         <pre>{{ JSON.stringify(achievements[0], null, 2) }}</pre>
       </div>
       
       <div class="mt-2">
         <button 
           @click="checkPrivacySettings" 
-          class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 mr-2"
+          class="px-2 py-1 bg-blue-900/50 text-blue-300 rounded-md text-xs hover:bg-blue-800/50 mr-2 border border-blue-700 transition-colors"
           :disabled="checkingPrivacy"
         >
           {{ checkingPrivacy ? 'Checking...' : 'Check Privacy Settings' }}
@@ -28,38 +28,38 @@
         
         <button 
           @click="forceAchievements" 
-          class="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+          class="px-2 py-1 bg-purple-900/50 text-purple-300 rounded-md text-xs hover:bg-purple-800/50 border border-purple-700 transition-colors"
           :disabled="forcingAchievements"
         >
           {{ forcingAchievements ? 'Forcing...' : 'Force Achievements' }}
         </button>
       </div>
       
-      <div v-if="privacyInfo" class="mt-2 p-2 bg-white rounded">
-        <div><strong>Privacy Check Results:</strong></div>
-        <div v-if="privacyInfo.errors.length > 0" class="text-red-500">
+      <div v-if="privacyInfo" class="mt-2 p-2 bg-gray-800/70 rounded-lg border border-gray-700">
+        <div><strong class="text-blue-300">Privacy Check Results:</strong></div>
+        <div v-if="privacyInfo.errors.length > 0" class="text-red-400">
           <div v-for="(error, index) in privacyInfo.errors" :key="index">
             - {{ error }}
           </div>
         </div>
-        <div v-else class="text-green-500">
+        <div v-else class="text-green-400">
           Your Steam profile appears to be correctly configured.
         </div>
         
-        <div v-if="privacyInfo.privacyInstructions" class="mt-2 text-blue-600">
+        <div v-if="privacyInfo.privacyInstructions" class="mt-2 text-blue-400">
           <div v-for="(instruction, index) in privacyInfo.privacyInstructions" :key="index">
             {{ instruction }}
           </div>
         </div>
         
-        <div v-if="privacyInfo.profileInfo" class="mt-2">
-          <div><strong>Profile Info:</strong></div>
+        <div v-if="privacyInfo.profileInfo" class="mt-2 text-gray-300">
+          <div><strong class="text-blue-300">Profile Info:</strong></div>
           <div>Visibility: {{ getVisibilityText(privacyInfo.profileInfo.communityvisibilitystate) }}</div>
-          <div>Profile URL: <a :href="privacyInfo.profileInfo.profileurl" target="_blank" class="text-blue-500 hover:underline">{{ privacyInfo.profileInfo.personaname }}</a></div>
+          <div>Profile URL: <a :href="privacyInfo.profileInfo.profileurl" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline transition-colors">{{ privacyInfo.profileInfo.personaname }}</a></div>
         </div>
         
-        <div v-if="privacyInfo.achievementsInfo" class="mt-2">
-          <div><strong>Achievements Info:</strong></div>
+        <div v-if="privacyInfo.achievementsInfo" class="mt-2 text-gray-300">
+          <div><strong class="text-blue-300">Achievements Info:</strong></div>
           <div>Success: {{ privacyInfo.achievementsInfo.success ? 'Yes' : 'No' }}</div>
           <div>Game: {{ privacyInfo.achievementsInfo.gameName }}</div>
           <div>Achievement Count: {{ privacyInfo.achievementsInfo.achievementCount }}</div>
@@ -70,14 +70,14 @@
     <div class="flex justify-between">
       <button 
         @click="toggleDebugInfo" 
-        class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        class="inline-flex justify-center px-4 py-2 border border-gray-700 shadow-glow text-sm font-medium rounded-md text-gray-300 bg-gray-900/50 hover:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       >
         {{ showDebugInfo ? 'Hide Debug' : 'Show Debug' }}
       </button>
       
       <button 
         @click="close" 
-        class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        class="inline-flex justify-center px-4 py-2 border border-blue-700 shadow-glow text-sm font-medium rounded-md text-blue-300 bg-blue-900/50 hover:bg-blue-800/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       >
         Close
       </button>

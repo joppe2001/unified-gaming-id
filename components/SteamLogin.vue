@@ -1,44 +1,58 @@
 <template>
-  <div class="steam-login">
-    <div v-if="!connected || loading" class="w-full">
-      <button 
-        @click="connectSteam" 
-        class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition-colors w-full justify-center"
-        :disabled="loading || !user"
-        :class="{ 'bg-green-700 hover:bg-green-800': connected }"
-      >
-        <img src="/images/steam-logo.svg" alt="Steam" class="w-6 h-6" />
-        <span v-if="!connected && !loading">Connect with Steam</span>
-        <span v-else-if="connected && !loading">Connected to Steam</span>
-        <span v-else>Connecting...</span>
-        <span v-if="loading" class="ml-2">
-          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </span>
-      </button>
-    </div>
-    
-    <div v-else class="flex items-center justify-between bg-green-700 text-white font-medium py-2 px-4 rounded w-full">
-      <div class="flex items-center gap-2">
-        <img src="/images/steam-logo.svg" alt="Steam" class="w-6 h-6" />
-        <span>Connected to Steam</span>
+  <div>
+    <div v-if="loading" class="flex justify-center py-4">
+      <div class="loading-spinner-small">
+        <div class="spinner-inner-small"></div>
       </div>
-      <button 
-        @click="disconnectSteam" 
-        class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm transition-colors"
-      >
-        Logout
-      </button>
     </div>
     
-    <div v-if="error" class="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-      {{ error }}
+    <div v-else-if="error" class="p-4 bg-red-900/50 border border-red-700 text-red-200 rounded-lg mb-4">
+      <p class="font-medium mb-1">Connection Error</p>
+      <p class="text-sm">{{ error }}</p>
     </div>
     
-    <div v-if="!user" class="mt-2 text-sm text-gray-500 text-center">
-      Sign in with your account first to connect Steam
+    <div v-else>
+      <div v-if="profile?.connectedAccounts?.steam" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <button 
+          @click="disconnectSteam" 
+          class="py-2 px-4 bg-red-900/50 hover:bg-red-800 text-white rounded-lg transition flex items-center justify-center relative overflow-hidden group"
+          :disabled="disconnectLoading"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-10 group-hover:-translate-x-full"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+          <span v-if="disconnectLoading">Disconnecting...</span>
+          <span v-else>Disconnect Steam</span>
+        </button>
+        
+        <button 
+          @click="refreshSteamData" 
+          class="py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition flex items-center justify-center relative overflow-hidden group"
+          :disabled="refreshLoading"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-10 group-hover:-translate-x-full"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+          </svg>
+          <span v-if="refreshLoading">Refreshing...</span>
+          <span v-else>Refresh Data</span>
+        </button>
+      </div>
+      
+      <div v-else>
+        <p class="text-gray-300 mb-4">Connect your Steam account to track your games, achievements, and stats.</p>
+        <a 
+          :href="steamAuthUrl" 
+          class="inline-flex items-center py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition relative overflow-hidden group"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-20 group-hover:-translate-x-full"></span>
+          <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11.979 0C5.678 0 0.511 4.86 0.022 11.037l6.432 2.658c0.545-0.371 1.203-0.59 1.912-0.59 0.307 0 0.6 0.049 0.882 0.125l2.875-4.175V9.017c0-2.484 2.013-4.5 4.493-4.5 2.48 0 4.492 2.016 4.492 4.5s-2.013 4.5-4.492 4.5c-0.071 0-0.136-0.016-0.206-0.019l-4.1 2.934c0.008 0.061 0.019 0.123 0.019 0.185 0 1.933-1.557 3.5-3.479 3.5-1.688 0-3.088-1.205-3.416-2.803L0 16.068C1.549 20.704 6.295 24 11.979 24 18.626 24 24 18.617 24 11.999 24 5.382 18.626 0 11.979 0zM7.54 18.21l-1.473-0.61c0.262 0.543 0.714 0.999 1.314 1.25 1.297 0.539 2.793-0.076 3.332-1.375 0.263-0.63 0.264-1.319 0.005-1.949s-0.75-1.121-1.377-1.383c-0.624-0.26-1.29-0.249-1.878-0.03l1.523 0.63c0.956 0.4 1.409 1.5 1.009 2.455-0.397 0.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3-3.015-3-1.665 0-3.015 1.338-3.015 3s1.35 3 3.015 3c1.663 0 3.015-1.338 3.015-3zm-5.273-0.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
+          </svg>
+          Connect with Steam
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -218,4 +232,39 @@ const disconnectSteam = async () => {
     loading.value = false;
   }
 };
-</script> 
+
+const refreshSteamData = async () => {
+  // Implementation of refreshSteamData method
+};
+
+const steamAuthUrl = '/api/connect-steam'; // This should be dynamically generated
+</script>
+
+<style scoped>
+.loading-spinner-small {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: conic-gradient(transparent 0%, rgba(59, 130, 246, 0.8));
+  -webkit-mask: radial-gradient(circle at center, transparent 55%, white 55%);
+  mask: radial-gradient(circle at center, transparent 55%, white 55%);
+  animation: spin 1.5s linear infinite;
+}
+
+.spinner-inner-small {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #60a5fa;
+  top: calc(50% - 3px);
+  left: calc(50% - 3px);
+  box-shadow: 0 0 10px 2px rgba(96, 165, 250, 0.6);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style> 
