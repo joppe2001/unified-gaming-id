@@ -54,7 +54,6 @@ export default defineEventHandler(async (event) => {
     
     return userData;
   } catch (error) {
-    console.error('Error fetching user profile:', error);
     return { statusCode: 500, body: { error: 'Internal server error' } };
   }
 }); 

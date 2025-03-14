@@ -224,7 +224,6 @@ const refreshSteamData = async () => {
 const steamAuthUrl = '/api/connect-steam';
 
 onMounted(async () => {
-  console.log('SteamLogin component mounted');
   
   // Check for error or success messages in URL first
   if (route.query.platform === 'steam' && route.query.status === 'connected') {

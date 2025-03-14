@@ -208,7 +208,6 @@ const logout = async () => {
 // Fetch user profile
 const fetchProfile = async () => {
   try {
-    console.log('Fetching user profile...');
     const response = await $fetch('/api/user/profile');
     
     // Check if the response is an error using type assertion
@@ -221,8 +220,6 @@ const fetchProfile = async () => {
       console.error('Error response from profile API:', errorResponse);
       throw new Error(errorResponse.body.error);
     }
-    
-    console.log('Profile data received:', response);
     profile.value = response;
     
     // Check if Steam is connected and fetch games if it is
@@ -265,7 +262,6 @@ const fetchGames = async () => {
           if (achievementsResponse.achievements) {
             // Add achievements to the game object
             game.achievements = achievementsResponse.achievements;
-            console.log(`Fetched ${achievementsResponse.achievements.length} achievements for ${game.name}`);
           }
         } catch (error) {
           console.error(`Error fetching achievements for game ${game.name}:`, error);
@@ -348,7 +344,6 @@ const formatDate = (timestamp: any) => {
 
 // Initialize the page
 onMounted(async () => {
-  console.log('Dashboard page mounted');
   
   // Check if we're returning from a Steam connection
   if (route.query.platform === 'steam' && route.query.status === 'connected') {
