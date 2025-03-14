@@ -27,8 +27,6 @@ export default defineEventHandler(async (event) => {
         connectedAccounts: {}
       };
       
-      console.log('Creating new user document:', userData);
-      
       await db.collection('users').doc(user.uid).set(userData);
       return userData;
     }

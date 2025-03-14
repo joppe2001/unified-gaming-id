@@ -101,7 +101,6 @@ const refreshLoading = ref(false);
 
 // Computed property to check if Steam is connected
 const isSteamConnected = computed(() => {
-  console.log('SteamLogin - Checking if Steam is connected:', injectedProfile.value?.connectedAccounts?.steam);
   return !!injectedProfile.value?.connectedAccounts?.steam;
 });
 
@@ -122,7 +121,6 @@ const checkSteamConnection = async () => {
   try {
     loading.value = true;
     
-    console.log('Checking Steam connection status for user:', user.value.uid);
     const response = await $fetch<UserProfile>('/api/user/profile');
     
     // Check if the response is an error
@@ -132,12 +130,8 @@ const checkSteamConnection = async () => {
         errorResponse.statusCode && 
         errorResponse.body && 
         errorResponse.body.error) {
-      console.error('Error response from profile API:', errorResponse);
       throw new Error(errorResponse.body.error);
     }
-    
-    // Log the user document to help with debugging
-    console.log('User document:', JSON.stringify(response, null, 2));
     
     // Update the injected profile if it's not already set
     if (!injectedProfile.value && response) {
@@ -210,14 +204,12 @@ const refreshSteamData = async () => {
         errorResponse.statusCode && 
         errorResponse.body && 
         errorResponse.body.error) {
-      console.error('Error response from profile API:', errorResponse);
       throw new Error(errorResponse.body.error);
     }
     
     // Update the injected profile
     if (response) {
       injectedProfile.value = response;
-      console.log('Updated profile data:', response);
     }
     
     // You could also refresh games data here if needed

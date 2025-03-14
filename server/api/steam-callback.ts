@@ -63,7 +63,6 @@ export default defineEventHandler(async (event) => {
 
     if (!userDoc.exists) {
       // Create the user document if it doesn't exist
-      console.log(`Creating new user document for userId: ${userId} with Steam connection`);
       await userRef.set({
         uid: userId,
         createdAt: new Date(),
@@ -79,7 +78,6 @@ export default defineEventHandler(async (event) => {
       });
     } else {
       // Update the existing user document
-      console.log(`Updating existing user document for userId: ${userId} with Steam connection`);
       await userRef.update({
         'connectedAccounts.steam': {
           steamId,

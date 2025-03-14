@@ -267,16 +267,6 @@ const fetchAchievements = async (gameId: string | number, forceRefresh = false) 
       forced?: boolean;
     }>(`/api/steam/achievements?gameId=${gameId}${forceRefresh ? '&forceRefresh=true' : ''}`);
     
-    // Add detailed logging for debugging
-    console.log('Achievement API response:', {
-      gameId,
-      hasAchievements: response.achievements && response.achievements.length > 0,
-      isPrivate: !!response.isPrivate,
-      cached: !!response.cached,
-      isFallback: !!response.isFallback,
-      sampleAchievement: response.achievements && response.achievements.length > 0 ? response.achievements[0] : null
-    });
-    
     if (response.achievements && Array.isArray(response.achievements)) {
       achievements.value = response.achievements;
       
@@ -362,9 +352,6 @@ const checkPrivacySettings = async () => {
   
   try {
     const response = await $fetch<any>(`/api/steam/debug-profile?gameId=${props.game.appid}`);
-    
-    console.log('Privacy check result:', response);
-    privacyInfo.value = response;
   } catch (error) {
     console.error('Error checking privacy:', error);
     alert('Error checking privacy. See console for details.');
@@ -384,8 +371,6 @@ const forceAchievements = async () => {
   try {
     // Call the force-achievements endpoint
     const response = await $fetch<any>(`/api/steam/force-achievements?gameId=${props.game.appid}&bypassPrivacy=true`);
-    
-    console.log('Force achievements response:', response);
     
     if (response.achievements && Array.isArray(response.achievements)) {
       achievements.value = response.achievements;

@@ -187,15 +187,6 @@ export default defineEventHandler(async (event) => {
     
     const achievements = achievementsResponse.data?.playerstats?.achievements || [];
     
-    // Add detailed logging for debugging
-    console.log('Raw Steam achievements response:', JSON.stringify({
-      success: achievementsResponse.data?.playerstats?.success,
-      gameId: gameId,
-      steamId: steamId,
-      achievementCount: achievements.length,
-      sampleAchievement: achievements.length > 0 ? achievements[0] : null
-    }));
-    
     // Get achievement schema for additional details like icons
     const schemaResponse = await axios.get(
       `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${steamApiKey}&appid=${gameId}`

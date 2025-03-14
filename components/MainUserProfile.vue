@@ -127,7 +127,6 @@ const games = inject<Ref<any[]>>('games', ref([]));
 const gamesLoading = inject<Ref<boolean>>('gamesLoading', ref(false));
 
 const gamesCount = computed(() => {
-  console.log('Games in MainUserProfile:', games.value);
   return games.value?.length || 0;
 });
 
