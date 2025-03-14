@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+:root {
+  /* Primary Colors */
+  --accent: #6B48FF;
+  --accent-dark: #5239C4;
+  
+  /* Background Colors */
+  --bg-primary: #121218;
+  --bg-secondary: #1E1E26;
+  --bg-tertiary: #2A2A36;
+  
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8D0;
+  --text-muted: #8888A0;
+  
+  /* Button Colors */
+  --btn-primary: #6B48FF;
+  --btn-primary-hover: #7E5FFF;
+  --btn-primary-active: #5239C4;
+  
+  --btn-secondary: #2A2A36;
+  --btn-secondary-hover: #3A3A46;
+  --btn-secondary-active: #222230;
+  
+  --btn-danger: #FF4757;
+  --btn-danger-hover: #FF6B76;
+  --btn-danger-active: #D63546;
+  
+  --btn-success: #2ED573;
+  --btn-success-hover: #4AE68C;
+  --btn-success-active: #25B362;
+  
+  /* Border Colors */
+  --border-light: #3A3A46;
+  --border-dark: #222230;
+  
+  /* Special Elements */
+  --login-btn: #6B48FF;
+  --login-btn-hover: #7E5FFF;
+  --login-btn-active: #5239C4;
+  
+  --logout-btn: #FF4757;
+  --logout-btn-hover: #FF6B76;
+  --logout-btn-active: #D63546;
+  
+  /* Notification Colors */
+  --notification-info: #3498DB;
+  --notification-success: #2ED573;
+  --notification-warning: #FFA502;
+  --notification-error: #FF4757;
+  
+  /* Game Element Colors */
+  --game-highlight: #9D71FF;
+  --game-energy: #00E0FF;
+  --game-health: #FF4757;
+  --game-xp: #2ED573;
+}

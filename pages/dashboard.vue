@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="h-auto bg-gray-50">
     <!-- Loading State -->
     <div v-if="loading && !error" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
       <div class="text-center p-6 rounded-lg">
@@ -153,7 +153,7 @@
                 <div v-if="profile?.connectedAccounts?.steam || profile?.connectedAccounts?.riot">
                   <NuxtLink 
                     to="/gaming-stats" 
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    class="inline-flex items-center px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
