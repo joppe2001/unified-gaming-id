@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[calc(100vh-80px)] flex flex-col md:flex-row items-stretch bg-gray-900 relative overflow-hidden">
+  <div class="h-auto lg:h-[calc(100vh-85px)] flex flex-col md:flex-row items-stretch bg-gray-900 relative overflow-hidden">
     <!-- Animated background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <!-- Animated grid lines -->

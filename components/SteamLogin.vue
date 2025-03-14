@@ -12,7 +12,7 @@
     </div>
     
     <div v-else>
-      <div v-if="profile?.connectedAccounts?.steam" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+      <div v-if="isSteamConnected" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <button 
           @click="disconnectSteam" 
           class="py-2 px-4 bg-red-900/50 hover:bg-red-800 text-white rounded-lg transition flex items-center justify-center relative overflow-hidden group"
@@ -58,53 +58,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed, inject } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 import { useCookie, useRoute } from '#app';
+
+// Define the profile type
+interface UserProfile {
+  uid?: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+  createdAt?: Date;
+  connectedAccounts?: {
+    steam?: {
+      steamId: string;
+      personaName: string;
+      avatarUrl: string;
+      profileUrl: string;
+      connectedAt: Date;
+    };
+    riot?: Record<string, any>;
+    [key: string]: any;
+  };
+}
 
 const { user, signInWithCustomToken } = useFirebase();
 const route = useRoute();
 
+// Inject the profile from the parent component
+const injectedProfile = inject<Ref<UserProfile | null>>('profile', ref(null));
+
 const loading = ref(false);
-const connected = ref(false);
 const error = ref<string | null>(null);
+const disconnectLoading = ref(false);
+const refreshLoading = ref(false);
+
+// Computed property to check if Steam is connected
+const isSteamConnected = computed(() => {
+  console.log('SteamLogin - Checking if Steam is connected:', injectedProfile.value?.connectedAccounts?.steam);
+  return !!injectedProfile.value?.connectedAccounts?.steam;
+});
+
+// Watch for user changes to check Steam connection
+watch(user, async (newUser) => {
+  if (newUser) {
+    // If we have a user but no profile data, fetch it
+    if (!injectedProfile.value) {
+      await checkSteamConnection();
+    }
+  }
+});
 
 // Check if user is already connected to Steam
 const checkSteamConnection = async () => {
   if (!user.value) return;
   
   try {
-    // Define a type for the user document
-    type UserDoc = {
-      uid: string;
-      email?: string | null;
-      displayName?: string | null;
-      photoURL?: string | null;
-      createdAt: Date;
-      connectedAccounts: {
-        steam?: {
-          steamId: string;
-          personaName: string;
-          avatarUrl: string;
-          profileUrl: string;
-          connectedAt: Date;
-        };
-        riot?: Record<string, any>;
-      };
-    };
+    loading.value = true;
     
     console.log('Checking Steam connection status for user:', user.value.uid);
-    const userDoc = await $fetch<UserDoc>('/api/user/profile');
+    const userDoc = await $fetch<UserProfile>('/api/user/profile');
     
     // Log the user document to help with debugging
     console.log('User document:', JSON.stringify(userDoc, null, 2));
     
-    const hasSteamConnection = !!userDoc?.connectedAccounts?.steam;
-    console.log('Has Steam connection:', hasSteamConnection);
+    // Update the injected profile if it's not already set
+    if (!injectedProfile.value && userDoc) {
+      injectedProfile.value = userDoc;
+    }
     
-    connected.value = hasSteamConnection;
-    
-    return hasSteamConnection;
+    return !!userDoc?.connectedAccounts?.steam;
   } catch (err: any) {
     console.error('Error fetching user profile:', err);
     
@@ -115,17 +138,69 @@ const checkSteamConnection = async () => {
       error.value = 'Failed to check Steam connection status';
     }
     return false;
+  } finally {
+    loading.value = false;
   }
 };
 
-// Watch for user changes to check Steam connection
-watch(user, async (newUser) => {
-  if (newUser) {
-    await checkSteamConnection();
-  } else {
-    connected.value = false;
+// Implement a direct approach to disconnect Steam
+const disconnectSteam = async () => {
+  if (!isSteamConnected.value || !user.value) return;
+  
+  disconnectLoading.value = true;
+  error.value = null;
+  
+  try {
+    // Call our API endpoint to disconnect Steam
+    type DisconnectResponse = {
+      success: boolean;
+      error?: string;
+    };
+    
+    const response = await $fetch<DisconnectResponse>('/api/disconnect-steam', {
+      method: 'POST'
+    });
+    
+    if (response.success) {
+      // Update the injected profile to reflect the disconnection
+      if (injectedProfile.value?.connectedAccounts) {
+        injectedProfile.value.connectedAccounts.steam = undefined;
+      }
+    } else {
+      error.value = response.error || 'Failed to disconnect Steam account';
+    }
+  } catch (err: any) {
+    console.error('Error disconnecting Steam account:', err);
+    error.value = 'Failed to disconnect Steam account';
+  } finally {
+    disconnectLoading.value = false;
   }
-});
+};
+
+const refreshSteamData = async () => {
+  if (!isSteamConnected.value || !user.value) return;
+  
+  refreshLoading.value = true;
+  
+  try {
+    // Refresh the profile data
+    const userDoc = await $fetch<UserProfile>('/api/user/profile');
+    
+    // Update the injected profile
+    if (userDoc) {
+      injectedProfile.value = userDoc;
+    }
+    
+    // You could also refresh games data here if needed
+  } catch (err: any) {
+    console.error('Error refreshing Steam data:', err);
+    error.value = 'Failed to refresh Steam data';
+  } finally {
+    refreshLoading.value = false;
+  }
+};
+
+const steamAuthUrl = '/api/connect-steam';
 
 onMounted(async () => {
   console.log('SteamLogin component mounted');
@@ -133,7 +208,6 @@ onMounted(async () => {
   // Check for error or success messages in URL first
   if (route.query.platform === 'steam' && route.query.status === 'connected') {
     console.log('Detected successful Steam connection in URL');
-    connected.value = true;
     
     // Force a refresh of the user profile to ensure we have the latest data
     if (user.value) {
@@ -148,8 +222,10 @@ onMounted(async () => {
     error.value = 'Firestore API is not enabled. Please enable it in the Google Cloud Console: https://console.cloud.google.com';
   }
   
-  // Check for Steam connection status
-  await checkSteamConnection();
+  // If we don't have profile data yet, check Steam connection
+  if (!injectedProfile.value && user.value) {
+    await checkSteamConnection();
+  }
   
   // Get the base URL for cookie settings
   const config = useRuntimeConfig();
@@ -171,7 +247,7 @@ onMounted(async () => {
     try {
       loading.value = true;
       await signInWithCustomToken(customTokenCookie.value);
-      connected.value = true;
+      
       // Clear the cookie after use with the same settings
       customTokenCookie.value = null;
       
@@ -185,65 +261,12 @@ onMounted(async () => {
     }
   }
 });
-
-const connectSteam = async () => {
-  if (connected.value || !user.value) return;
-  
-  loading.value = true;
-  error.value = null;
-  
-  try {
-    // Redirect to the Steam connect endpoint
-    window.location.href = '/api/connect-steam';
-  } catch (err) {
-    console.error('Error connecting to Steam:', err);
-    error.value = 'Failed to connect to Steam';
-    loading.value = false;
-  }
-};
-
-// Implement a direct approach to disconnect Steam
-const disconnectSteam = async () => {
-  if (!connected.value || !user.value) return;
-  
-  loading.value = true;
-  error.value = null;
-  
-  try {
-    // Call our API endpoint to disconnect Steam
-    type DisconnectResponse = {
-      success: boolean;
-      error?: string;
-    };
-    
-    const response = await $fetch<DisconnectResponse>('/api/disconnect-steam', {
-      method: 'POST'
-    });
-    
-    if (response.success) {
-      connected.value = false;
-    } else {
-      error.value = response.error || 'Failed to disconnect Steam account';
-    }
-  } catch (err) {
-    console.error('Error disconnecting Steam account:', err);
-    error.value = 'Failed to disconnect Steam account';
-  } finally {
-    loading.value = false;
-  }
-};
-
-const refreshSteamData = async () => {
-  // Implementation of refreshSteamData method
-};
-
-const steamAuthUrl = '/api/connect-steam'; // This should be dynamically generated
 </script>
 
 <style scoped>
 .loading-spinner-small {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: conic-gradient(transparent 0%, rgba(59, 130, 246, 0.8));
   -webkit-mask: radial-gradient(circle at center, transparent 55%, white 55%);

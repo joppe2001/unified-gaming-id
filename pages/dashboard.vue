@@ -202,7 +202,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useFirebase } from '~/composables/useFirebase';
 
@@ -210,10 +209,13 @@ const router = useRouter();
 const route = useRoute();
 const { user, loading, error, signOut } = useFirebase();
 
-const profile: Ref<any> = ref(null);
+const profile = ref<any>(null);
 const games = ref<any[]>([]);
 const gamesLoading = ref(false);
 const showFirestoreSetupGuide = computed(() => route.query.error === 'firestore_not_enabled');
+
+// Provide profile data to child components
+provide('profile', profile);
 
 // Redirect to login if not authenticated
 watch([user, loading], ([newUser, isLoading]) => {
@@ -237,7 +239,15 @@ const logout = async () => {
 // Fetch user profile
 const fetchProfile = async () => {
   try {
+    console.log('Fetching user profile...');
     profile.value = await $fetch('/api/user/profile');
+    console.log('Profile data received:', profile.value);
+    
+    // Check if Steam is connected and fetch games if it is
+    if (profile.value?.connectedAccounts?.steam) {
+      console.log('Steam account is connected, fetching games...');
+      fetchGames();
+    }
   } catch (error) {
     console.error('Error fetching profile:', error);
     // Set a default empty profile to prevent errors
