@@ -44,14 +44,14 @@
           <div v-else class="text-2xl font-bold text-purple-400">{{ gamesCount }}</div>
           <div class="text-xs text-gray-400">Games</div>
         </div>
-        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+        <div class="bg-gray-900/50 p-2 sm:p-3 rounded-lg border border-gray-700">
           <div v-if="gamesLoading" class="flex justify-center items-center h-8">
             <div class="loading-spinner-tiny">
               <div class="spinner-inner-tiny"></div>
             </div>
           </div>
           <div v-else class="text-2xl font-bold text-green-400">{{ achievementsCount }}</div>
-          <div class="text-xs text-gray-400">Achievements</div>
+          <div class="text-[10px] text-gray-400 relative top-1.5">Achievements</div>
         </div>
       </div>
       

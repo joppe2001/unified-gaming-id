@@ -254,7 +254,6 @@ const fetchGames = async () => {
     
     // Fetch achievements for each game
     if (games.value.length > 0) {
-      console.log(`Fetching achievements for ${games.value.length} games...`);
       
       // Only fetch achievements for the first 5 games to avoid rate limiting
       const gamesToFetch = games.value.slice(0, 5);
