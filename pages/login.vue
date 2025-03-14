@@ -15,24 +15,6 @@
         <div>
           <FirebaseLogin />
         </div>
-        
-        <div class="relative">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
-          </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500">Or connect gaming account</span>
-          </div>
-        </div>
-        
-        <!-- Gaming Platform Connections -->
-        <div>
-          <h2 class="text-xl font-semibold mb-4">Gaming Platforms</h2>
-          <div class="space-y-3">
-            <SteamLogin />
-            <!-- Add more platform logins here in the future -->
-          </div>
-        </div>
       </div>
     </div>
   </div>

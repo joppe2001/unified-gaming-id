@@ -196,17 +196,6 @@
           </svg>
           <span>Sign in with Google</span>
         </button>
-        
-        <button 
-          @click="handleRiotSignIn" 
-          class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 border border-red-500 rounded transition-colors"
-          :disabled="loading"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M12.534 21.77l-1.09-2.81 10.52.54-.451 4.5zM15.06 0L.307 6.969 2.59 17.471H5.6l-.52-7.512 3.541-1.5v9.012h3.121v-9.6l3.121-1.35-.54 10.95h3.121L19.334 0z"/>
-          </svg>
-          <span>Sign in with Riot Games</span>
-        </button>
       </div>
     </div>
   </div>
