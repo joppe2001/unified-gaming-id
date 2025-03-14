@@ -116,7 +116,6 @@
 
 <script setup lang="ts">
 import { useFirebase } from '~/composables/useFirebase';
-import { onMounted, watch } from 'vue';
 
 const { user, loading } = useFirebase();
 
