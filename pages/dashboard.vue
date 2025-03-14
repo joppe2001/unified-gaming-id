@@ -350,6 +350,28 @@ const formatDate = (timestamp: any) => {
     return 'Invalid date';
   }
 };
+
+// Initialize the page
+onMounted(async () => {
+  console.log('Dashboard page mounted');
+  
+  // Check if we're returning from a Steam connection
+  if (route.query.platform === 'steam' && route.query.status === 'connected') {
+    console.log('Detected successful Steam connection in URL');
+    
+    // Wait a moment for Firebase auth to initialize
+    if (user.value) {
+      console.log('User is authenticated, fetching fresh profile data');
+      await fetchProfile();
+    }
+  }
+  
+  // If user is already authenticated, fetch profile
+  if (!loading.value && user.value) {
+    console.log('User already authenticated, fetching profile');
+    await fetchProfile();
+  }
+});
 </script>
 
 <style scoped>

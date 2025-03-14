@@ -79,8 +79,18 @@ const checkSteamConnection = async () => {
       };
     };
     
+    console.log('Checking Steam connection status for user:', user.value.uid);
     const userDoc = await $fetch<UserDoc>('/api/user/profile');
-    connected.value = !!userDoc?.connectedAccounts?.steam;
+    
+    // Log the user document to help with debugging
+    console.log('User document:', JSON.stringify(userDoc, null, 2));
+    
+    const hasSteamConnection = !!userDoc?.connectedAccounts?.steam;
+    console.log('Has Steam connection:', hasSteamConnection);
+    
+    connected.value = hasSteamConnection;
+    
+    return hasSteamConnection;
   } catch (err: any) {
     console.error('Error fetching user profile:', err);
     
@@ -90,6 +100,7 @@ const checkSteamConnection = async () => {
     } else {
       error.value = 'Failed to check Steam connection status';
     }
+    return false;
   }
 };
 
@@ -103,6 +114,26 @@ watch(user, async (newUser) => {
 });
 
 onMounted(async () => {
+  console.log('SteamLogin component mounted');
+  
+  // Check for error or success messages in URL first
+  if (route.query.platform === 'steam' && route.query.status === 'connected') {
+    console.log('Detected successful Steam connection in URL');
+    connected.value = true;
+    
+    // Force a refresh of the user profile to ensure we have the latest data
+    if (user.value) {
+      console.log('Refreshing user profile after Steam connection');
+      await checkSteamConnection();
+    }
+  } else if (route.query.error === 'steam_auth_failed') {
+    error.value = 'Failed to connect to Steam. Please try again.';
+  } else if (route.query.error === 'steam_callback_error') {
+    error.value = 'Error processing Steam login. Please try again.';
+  } else if (route.query.error === 'firestore_not_enabled') {
+    error.value = 'Firestore API is not enabled. Please enable it in the Google Cloud Console: https://console.cloud.google.com';
+  }
+  
   // Check for Steam connection status
   await checkSteamConnection();
   
@@ -122,29 +153,22 @@ onMounted(async () => {
   });
   
   if (customTokenCookie.value) {
+    console.log('Found custom token cookie, signing in with custom token');
     try {
       loading.value = true;
       await signInWithCustomToken(customTokenCookie.value);
       connected.value = true;
       // Clear the cookie after use with the same settings
       customTokenCookie.value = null;
+      
+      // Force a refresh of the connection status
+      await checkSteamConnection();
     } catch (err) {
       console.error('Error signing in with custom token:', err);
       error.value = 'Failed to authenticate with Steam';
     } finally {
       loading.value = false;
     }
-  }
-  
-  // Check for error or success messages in URL
-  if (route.query.error === 'steam_auth_failed') {
-    error.value = 'Failed to connect to Steam. Please try again.';
-  } else if (route.query.error === 'steam_callback_error') {
-    error.value = 'Error processing Steam login. Please try again.';
-  } else if (route.query.error === 'firestore_not_enabled') {
-    error.value = 'Firestore API is not enabled. Please enable it in the Google Cloud Console: https://console.cloud.google.com';
-  } else if (route.query.platform === 'steam' && route.query.status === 'connected') {
-    connected.value = true;
   }
 });
 
