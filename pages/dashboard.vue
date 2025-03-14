@@ -77,18 +77,6 @@
     
     <!-- Dashboard Content -->
     <div v-else class="container mx-auto px-4 py-8 max-w-6xl relative z-10">
-      <!-- Header -->
-      <header class="mb-8 bg-gray-800 bg-opacity-70 rounded-xl shadow-glow border border-gray-700 p-6 backdrop-blur-sm">
-        <div class="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between">
-          <h1 class="text-3xl font-bold text-white mb-2 sm:mb-0 flex items-center">
-            <svg class="hidden lg:block w-8 h-8 mr-3 text-blue-400 filter drop-shadow-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span class="gaming-text">Gaming Dashboard</span>
-          </h1>
-        </div>
-      </header>
-      
       <!-- Firestore Setup Guide -->
       <div v-if="showFirestoreSetupGuide" class="mb-8">
         <FirestoreSetupGuide />
