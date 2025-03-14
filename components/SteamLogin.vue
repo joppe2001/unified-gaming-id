@@ -60,7 +60,26 @@ const checkSteamConnection = async () => {
   if (!user.value) return;
   
   try {
-    const userDoc = await $fetch('/api/user/profile');
+    // Define a type for the user document
+    type UserDoc = {
+      uid: string;
+      email?: string | null;
+      displayName?: string | null;
+      photoURL?: string | null;
+      createdAt: Date;
+      connectedAccounts: {
+        steam?: {
+          steamId: string;
+          personaName: string;
+          avatarUrl: string;
+          profileUrl: string;
+          connectedAt: Date;
+        };
+        riot?: Record<string, any>;
+      };
+    };
+    
+    const userDoc = await $fetch<UserDoc>('/api/user/profile');
     connected.value = !!userDoc?.connectedAccounts?.steam;
   } catch (err: any) {
     console.error('Error fetching user profile:', err);
@@ -154,7 +173,12 @@ const disconnectSteam = async () => {
   
   try {
     // Call our API endpoint to disconnect Steam
-    const response = await $fetch('/api/disconnect-steam', {
+    type DisconnectResponse = {
+      success: boolean;
+      error?: string;
+    };
+    
+    const response = await $fetch<DisconnectResponse>('/api/disconnect-steam', {
       method: 'POST'
     });
     

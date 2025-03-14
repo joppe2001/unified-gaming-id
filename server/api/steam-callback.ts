@@ -58,15 +58,38 @@ export default defineEventHandler(async (event) => {
     const db = getFirestore();
     const userRef = db.collection('users').doc(userId);
     
-    await userRef.update({
-      'connectedAccounts.steam': {
-        steamId,
-        personaName: steamUserData.personaname,
-        avatarUrl: steamUserData.avatarfull,
-        profileUrl: steamUserData.profileurl,
-        connectedAt: new Date()
-      }
-    });
+    // Check if the user document exists
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      // Create the user document if it doesn't exist
+      console.log(`Creating new user document for userId: ${userId} with Steam connection`);
+      await userRef.set({
+        uid: userId,
+        createdAt: new Date(),
+        connectedAccounts: {
+          steam: {
+            steamId,
+            personaName: steamUserData.personaname,
+            avatarUrl: steamUserData.avatarfull,
+            profileUrl: steamUserData.profileurl,
+            connectedAt: new Date()
+          }
+        }
+      });
+    } else {
+      // Update the existing user document
+      console.log(`Updating existing user document for userId: ${userId} with Steam connection`);
+      await userRef.update({
+        'connectedAccounts.steam': {
+          steamId,
+          personaName: steamUserData.personaname,
+          avatarUrl: steamUserData.avatarfull,
+          profileUrl: steamUserData.profileurl,
+          connectedAt: new Date()
+        }
+      });
+    }
     
     // Set the custom token as a cookie with proper settings for Vercel
     setCookie(event, 'firebaseCustomToken', customToken, {

@@ -1,6 +1,7 @@
 import { H3Event, parseCookies } from 'h3';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
@@ -16,6 +17,11 @@ if (!getApps().length) {
         privateKey
       })
     });
+    
+    // Configure Firestore to ignore undefined properties
+    const db = getFirestore();
+    db.settings({ ignoreUndefinedProperties: true });
+    console.log('Firestore initialized with ignoreUndefinedProperties: true');
   } else {
     console.warn('Firebase Admin SDK not initialized: missing credentials');
   }
