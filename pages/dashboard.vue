@@ -79,46 +79,13 @@
     <div v-else class="container mx-auto px-4 py-8 max-w-6xl relative z-10">
       <!-- Header -->
       <header class="mb-8 bg-gray-800 bg-opacity-70 rounded-xl shadow-glow border border-gray-700 p-6 backdrop-blur-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between">
           <h1 class="text-3xl font-bold text-white mb-2 sm:mb-0 flex items-center">
-            <svg class="w-8 h-8 mr-3 text-blue-400 filter drop-shadow-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <svg class="hidden lg:block w-8 h-8 mr-3 text-blue-400 filter drop-shadow-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             <span class="gaming-text">Gaming Dashboard</span>
           </h1>
-          <div class="flex items-center space-x-2">
-            <button 
-              @click="refreshPage" 
-              class="p-2 text-gray-300 hover:text-blue-400 transition rounded-full hover:bg-gray-700"
-              title="Refresh"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-              </svg>
-            </button>
-            <!-- Desktop Logout Button (visible only on desktop) -->
-            <button 
-              @click="logout" 
-              class="hidden sm:inline-flex items-center p-2 text-gray-300 hover:text-red-400 transition rounded-full hover:bg-gray-700"
-              title="Sign Out"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-              </svg>
-            </button>
-            <!-- Mobile Logout Button (visible only on mobile) -->
-            <button 
-              @click="logout" 
-              class="sm:hidden inline-flex items-center px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors relative overflow-hidden group"
-              aria-label="Sign Out"
-            >
-              <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-20 group-hover:-translate-x-full"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-              </svg>
-              <span class="text-sm font-medium">Logout</span>
-            </button>
-          </div>
         </div>
       </header>
       

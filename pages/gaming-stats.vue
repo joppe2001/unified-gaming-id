@@ -139,7 +139,7 @@
         </div>
 
         <!-- Game list - Mobile responsive -->
-        <div class="bg-gray-800 bg-opacity-70 shadow-glow rounded-xl overflow-hidden border border-gray-700 backdrop-blur-sm h-[calc(100vh-25rem)]">
+        <div class="bg-gray-800 bg-opacity-70 shadow-glow rounded-xl overflow-hidden border border-gray-700 backdrop-blur-sm h-auto lg:h-[calc(100vh-25rem)]">
           <div class="px-4 py-4 border-b border-gray-700 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 class="text-xl leading-6 font-medium text-blue-300 gaming-text">Your Games</h3>
