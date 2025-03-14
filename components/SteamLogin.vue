@@ -87,15 +87,28 @@ onMounted(async () => {
   // Check for Steam connection status
   await checkSteamConnection();
   
-  // Check for custom token in cookies
-  const customToken = useCookie('firebaseCustomToken').value;
-  if (customToken) {
+  // Get the base URL for cookie settings
+  const config = useRuntimeConfig();
+  const baseUrl = config.public.baseUrl;
+  
+  // Extract domain from baseUrl for cookie settings
+  const urlObj = new URL(baseUrl);
+  const domain = urlObj.hostname;
+  
+  // Check for custom token in cookies with proper settings
+  const customTokenCookie = useCookie('firebaseCustomToken', {
+    path: '/',
+    // Only set domain for production (not localhost)
+    ...(domain !== 'localhost' && { domain })
+  });
+  
+  if (customTokenCookie.value) {
     try {
       loading.value = true;
-      await signInWithCustomToken(customToken);
+      await signInWithCustomToken(customTokenCookie.value);
       connected.value = true;
-      // Clear the cookie after use
-      useCookie('firebaseCustomToken').value = null;
+      // Clear the cookie after use with the same settings
+      customTokenCookie.value = null;
     } catch (err) {
       console.error('Error signing in with custom token:', err);
       error.value = 'Failed to authenticate with Steam';

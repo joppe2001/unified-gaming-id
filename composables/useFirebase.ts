@@ -159,8 +159,20 @@ export const useFirebase = () => {
       await firebaseSignOut(auth);
       user.value = null;
       
-      // Clear the ID token cookie
-      const idTokenCookie = useCookie('idToken');
+      // Get the base URL from runtime config
+      const runtimeConfig = useRuntimeConfig();
+      const baseUrl = runtimeConfig.public.baseUrl;
+      
+      // Extract domain from baseUrl for cookie settings
+      const urlObj = new URL(baseUrl);
+      const domain = urlObj.hostname;
+      
+      // Clear the ID token cookie with the same settings used when setting it
+      const idTokenCookie = useCookie('idToken', {
+        path: '/',
+        // Only set domain for production (not localhost)
+        ...(domain !== 'localhost' && { domain })
+      });
       idTokenCookie.value = null;
     } catch (err) {
       error.value = err as Error;
@@ -172,11 +184,22 @@ export const useFirebase = () => {
   const storeIdTokenInCookie = async (currentUser: User) => {
     try {
       const token = await getIdToken(currentUser);
+      
+      // Get the base URL from runtime config
+      const runtimeConfig = useRuntimeConfig();
+      const baseUrl = runtimeConfig.public.baseUrl;
+      
+      // Extract domain from baseUrl for cookie settings
+      const urlObj = new URL(baseUrl);
+      const domain = urlObj.hostname;
+      
       // Use Nuxt's useCookie to store the token
       const idTokenCookie = useCookie('idToken', {
         maxAge: 60 * 60, // 1 hour
         secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        path: '/',
+        // Only set domain for production (not localhost)
+        ...(domain !== 'localhost' && { domain })
       });
       idTokenCookie.value = token;
     } catch (err) {
