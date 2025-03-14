@@ -214,8 +214,10 @@ const games = ref<any[]>([]);
 const gamesLoading = ref(false);
 const showFirestoreSetupGuide = computed(() => route.query.error === 'firestore_not_enabled');
 
-// Provide profile data to child components
+// Provide profile and games data to child components
 provide('profile', profile);
+provide('games', games);
+provide('gamesLoading', gamesLoading);
 
 // Redirect to login if not authenticated
 watch([user, loading], ([newUser, isLoading]) => {
@@ -282,6 +284,28 @@ const fetchGames = async () => {
   try {
     const response = await $fetch<{ games?: any[] }>('/api/steam/games');
     games.value = response.games || [];
+    
+    // Fetch achievements for each game
+    if (games.value.length > 0) {
+      console.log(`Fetching achievements for ${games.value.length} games...`);
+      
+      // Only fetch achievements for the first 5 games to avoid rate limiting
+      const gamesToFetch = games.value.slice(0, 5);
+      
+      for (const game of gamesToFetch) {
+        try {
+          const achievementsResponse = await $fetch<{ achievements?: any[] }>(`/api/steam/achievements?gameId=${game.appid}`);
+          
+          if (achievementsResponse.achievements) {
+            // Add achievements to the game object
+            game.achievements = achievementsResponse.achievements;
+            console.log(`Fetched ${achievementsResponse.achievements.length} achievements for ${game.name}`);
+          }
+        } catch (error) {
+          console.error(`Error fetching achievements for game ${game.name}:`, error);
+        }
+      }
+    }
   } catch (error) {
     console.error('Error fetching games:', error);
   } finally {

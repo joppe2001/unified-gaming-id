@@ -36,11 +36,21 @@
           <div class="text-xs text-gray-400">Platforms</div>
         </div>
         <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-          <div class="text-2xl font-bold text-purple-400">{{ gamesCount }}</div>
+          <div v-if="gamesLoading" class="flex justify-center items-center h-8">
+            <div class="loading-spinner-tiny">
+              <div class="spinner-inner-tiny"></div>
+            </div>
+          </div>
+          <div v-else class="text-2xl font-bold text-purple-400">{{ gamesCount }}</div>
           <div class="text-xs text-gray-400">Games</div>
         </div>
         <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-          <div class="text-2xl font-bold text-green-400">{{ achievementsCount }}</div>
+          <div v-if="gamesLoading" class="flex justify-center items-center h-8">
+            <div class="loading-spinner-tiny">
+              <div class="spinner-inner-tiny"></div>
+            </div>
+          </div>
+          <div v-else class="text-2xl font-bold text-green-400">{{ achievementsCount }}</div>
           <div class="text-xs text-gray-400">Achievements</div>
         </div>
       </div>
@@ -73,11 +83,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject, ref } from 'vue';
+import type { Ref } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 
+// Define the profile type
+interface UserProfile {
+  uid?: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+  createdAt?: Date;
+  connectedAccounts?: {
+    steam?: {
+      steamId: string;
+      personaName: string;
+      avatarUrl: string;
+      profileUrl: string;
+      connectedAt: Date;
+    };
+    riot?: Record<string, any>;
+    [key: string]: any;
+  };
+  // Add these for error responses
+  statusCode?: number;
+  body?: {
+    error?: string;
+    [key: string]: any;
+  };
+}
+
 const { user, signOut } = useFirebase();
-const profile = inject('profile', ref(null));
+const profile = inject<Ref<UserProfile | null>>('profile', ref(null));
 
 // Computed properties for stats
 const connectedPlatformsCount = computed(() => {
@@ -85,12 +122,38 @@ const connectedPlatformsCount = computed(() => {
   return Object.keys(profile.value.connectedAccounts).length;
 });
 
+// Inject games from parent component
+const games = inject<Ref<any[]>>('games', ref([]));
+const gamesLoading = inject<Ref<boolean>>('gamesLoading', ref(false));
+
 const gamesCount = computed(() => {
-  return 0; // This would be populated from your actual data
+  console.log('Games in MainUserProfile:', games.value);
+  return games.value?.length || 0;
 });
 
 const achievementsCount = computed(() => {
-  return 0; // This would be populated from your actual data
+  // Calculate total achievements across all games
+  let total = 0;
+  
+  // If we have games with achievements, count them
+  games.value?.forEach(game => {
+    if (game.achievements) {
+      // If achievements is an array, count its length
+      if (Array.isArray(game.achievements)) {
+        total += game.achievements.length;
+      }
+      // If it's a number, add it directly
+      else if (typeof game.achievements === 'number') {
+        total += game.achievements;
+      }
+      // If it has an unlocked property that's a number, add it
+      else if (game.achievements.unlocked && typeof game.achievements.unlocked === 'number') {
+        total += game.achievements.unlocked;
+      }
+    }
+  });
+  
+  return total;
 });
 
 // Logout function
@@ -139,6 +202,33 @@ const logout = async () => {
   100% {
     opacity: 0.3;
     transform: scale(1.05);
+  }
+}
+
+.loading-spinner-tiny {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: conic-gradient(transparent 0%, rgba(59, 130, 246, 0.8));
+  -webkit-mask: radial-gradient(circle at center, transparent 55%, white 55%);
+  mask: radial-gradient(circle at center, transparent 55%, white 55%);
+  animation: spin 1.5s linear infinite;
+}
+
+.spinner-inner-tiny {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #60a5fa;
+  top: calc(50% - 2px);
+  left: calc(50% - 2px);
+  box-shadow: 0 0 5px 1px rgba(96, 165, 250, 0.6);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style> 
