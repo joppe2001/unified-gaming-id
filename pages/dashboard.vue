@@ -240,8 +240,21 @@ const logout = async () => {
 const fetchProfile = async () => {
   try {
     console.log('Fetching user profile...');
-    profile.value = await $fetch('/api/user/profile');
-    console.log('Profile data received:', profile.value);
+    const response = await $fetch('/api/user/profile');
+    
+    // Check if the response is an error using type assertion
+    const errorResponse = response as any;
+    if (errorResponse && 
+        typeof errorResponse === 'object' && 
+        errorResponse.statusCode && 
+        errorResponse.body && 
+        errorResponse.body.error) {
+      console.error('Error response from profile API:', errorResponse);
+      throw new Error(errorResponse.body.error);
+    }
+    
+    console.log('Profile data received:', response);
+    profile.value = response;
     
     // Check if Steam is connected and fetch games if it is
     if (profile.value?.connectedAccounts?.steam) {

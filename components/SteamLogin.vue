@@ -80,6 +80,12 @@ interface UserProfile {
     riot?: Record<string, any>;
     [key: string]: any;
   };
+  // Add these for error responses
+  statusCode?: number;
+  body?: {
+    error?: string;
+    [key: string]: any;
+  };
 }
 
 const { user, signInWithCustomToken } = useFirebase();
@@ -117,17 +123,28 @@ const checkSteamConnection = async () => {
     loading.value = true;
     
     console.log('Checking Steam connection status for user:', user.value.uid);
-    const userDoc = await $fetch<UserProfile>('/api/user/profile');
+    const response = await $fetch<UserProfile>('/api/user/profile');
     
-    // Log the user document to help with debugging
-    console.log('User document:', JSON.stringify(userDoc, null, 2));
-    
-    // Update the injected profile if it's not already set
-    if (!injectedProfile.value && userDoc) {
-      injectedProfile.value = userDoc;
+    // Check if the response is an error
+    const errorResponse = response as any;
+    if (errorResponse && 
+        typeof errorResponse === 'object' && 
+        errorResponse.statusCode && 
+        errorResponse.body && 
+        errorResponse.body.error) {
+      console.error('Error response from profile API:', errorResponse);
+      throw new Error(errorResponse.body.error);
     }
     
-    return !!userDoc?.connectedAccounts?.steam;
+    // Log the user document to help with debugging
+    console.log('User document:', JSON.stringify(response, null, 2));
+    
+    // Update the injected profile if it's not already set
+    if (!injectedProfile.value && response) {
+      injectedProfile.value = response;
+    }
+    
+    return !!response?.connectedAccounts?.steam;
   } catch (err: any) {
     console.error('Error fetching user profile:', err);
     
@@ -135,7 +152,7 @@ const checkSteamConnection = async () => {
     if (err.message?.includes('PERMISSION_DENIED') && err.message?.includes('Cloud Firestore API has not been used')) {
       error.value = 'Firestore API is not enabled. Please enable it in the Google Cloud Console.';
     } else {
-      error.value = 'Failed to check Steam connection status';
+      error.value = 'Failed to check Steam connection status: ' + (err.message || 'Unknown error');
     }
     return false;
   } finally {
@@ -184,17 +201,29 @@ const refreshSteamData = async () => {
   
   try {
     // Refresh the profile data
-    const userDoc = await $fetch<UserProfile>('/api/user/profile');
+    const response = await $fetch<UserProfile>('/api/user/profile');
+    
+    // Check if the response is an error
+    const errorResponse = response as any;
+    if (errorResponse && 
+        typeof errorResponse === 'object' && 
+        errorResponse.statusCode && 
+        errorResponse.body && 
+        errorResponse.body.error) {
+      console.error('Error response from profile API:', errorResponse);
+      throw new Error(errorResponse.body.error);
+    }
     
     // Update the injected profile
-    if (userDoc) {
-      injectedProfile.value = userDoc;
+    if (response) {
+      injectedProfile.value = response;
+      console.log('Updated profile data:', response);
     }
     
     // You could also refresh games data here if needed
   } catch (err: any) {
     console.error('Error refreshing Steam data:', err);
-    error.value = 'Failed to refresh Steam data';
+    error.value = 'Failed to refresh Steam data: ' + (err.message || 'Unknown error');
   } finally {
     refreshLoading.value = false;
   }

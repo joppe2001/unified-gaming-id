@@ -13,10 +13,6 @@ export default defineEventHandler(async (event) => {
     // Get user profile from Firestore
     const db = getFirestore();
     
-    // Configure Firestore settings to ignore undefined properties
-    const settings = { ignoreUndefinedProperties: true };
-    db.settings(settings);
-    
     const userDoc = await db.collection('users').doc(user.uid).get();
     
     if (!userDoc.exists) {
