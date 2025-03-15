@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, parseCookies, createError } from 'h3';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import axios from 'axios';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -41,7 +42,10 @@ export default defineEventHandler(async (event) => {
       }>
     }>();
     
-    // Initialize users map with profile data
+    // Map to store steamId to userId mapping
+    const steamIdToUserIdMap = new Map<string, string>();
+    
+    // Initialize users map with profile data and build steamId to userId mapping
     usersSnapshot.forEach(doc => {
       const userData = doc.data();
       const userId = userData.uid || doc.id;
@@ -51,6 +55,7 @@ export default defineEventHandler(async (event) => {
         return;
       }
       
+      // Store the user data
       usersMap.set(userId, {
         userId,
         displayName: userData.displayName || null,
@@ -65,6 +70,13 @@ export default defineEventHandler(async (event) => {
       });
       
       console.log(`Added user ${userId} to users map with displayName: ${userData.displayName || 'null'}`);
+      
+      // If user has a connected Steam account, add to the steamId to userId mapping
+      if (userData.connectedAccounts?.steam?.steamId) {
+        const steamId = userData.connectedAccounts.steam.steamId;
+        steamIdToUserIdMap.set(steamId, userId);
+        console.log(`Mapped steamId ${steamId} to userId ${userId}`);
+      }
     });
     
     // Map to track all unique achievements
@@ -90,8 +102,10 @@ export default defineEventHandler(async (event) => {
     
     // Process each achievement document
     console.log(`Processing ${achievementsSnapshot.size} achievement documents`);
+    let processedCount = 0;
     achievementsSnapshot.forEach(doc => {
       const data = doc.data();
+      processedCount++;
       
       // Skip if no achievements array
       if (!Array.isArray(data.achievements)) {
@@ -99,28 +113,29 @@ export default defineEventHandler(async (event) => {
         return;
       }
       
-      // Extract user ID and game ID from document ID (format: userId_gameId)
-      const [userId, gameId] = doc.id.split('_');
+      // Extract steamId and gameId from document ID (format: steamId_gameId)
+      const [steamId, gameId] = doc.id.split('_');
       
-      if (!userId || !gameId) {
+      if (!steamId || !gameId) {
         console.warn(`Invalid document ID format: ${doc.id}`);
         return;
       }
       
-      // Initialize user if not exists (this should be rare since we already loaded all users)
-      if (!usersMap.has(userId)) {
-        console.log(`Creating new user entry for ${userId} not found in users collection`);
-        usersMap.set(userId, {
-          userId,
-          displayName: null,
-          photoURL: null,
-          totalAchievements: 0,
-          unlockedAchievements: 0,
-          achievementRate: 0,
-          lastUnlocked: 0,
-          games: new Map()
-        });
+      // Get the userId from the steamId
+      const userId = steamIdToUserIdMap.get(steamId);
+      
+      if (!userId) {
+        console.warn(`Could not find userId for steamId: ${steamId}`);
+        return;
       }
+      
+      // Get the user from the usersMap
+      if (!usersMap.has(userId)) {
+        console.warn(`User ${userId} not found in usersMap`);
+        return;
+      }
+      
+      console.log(`Processing achievements for user ${userId} (steamId: ${steamId}) and game ${gameId}`);
       
       const user = usersMap.get(userId)!;
       
@@ -128,7 +143,7 @@ export default defineEventHandler(async (event) => {
       if (!user.games.has(gameId)) {
         user.games.set(gameId, {
           gameId,
-          gameName: data.gameName || 'Unknown Game',
+          gameName: data.gameName && data.gameName !== 'Unknown Game' ? data.gameName : `Game ${gameId}`,
           achievementsTotal: 0,
           achievementsUnlocked: 0,
           lastPlayed: data.lastPlayed || null
@@ -136,6 +151,11 @@ export default defineEventHandler(async (event) => {
       }
       
       const game = user.games.get(gameId)!;
+      
+      // Update game name if we have a better one
+      if (data.gameName && data.gameName !== 'Unknown Game' && game.gameName === `Game ${gameId}`) {
+        game.gameName = data.gameName;
+      }
       
       // Count achievements
       game.achievementsTotal += data.achievements.length;
@@ -163,6 +183,36 @@ export default defineEventHandler(async (event) => {
         game.achievementsUnlocked = Math.min(game.achievementsUnlocked, game.achievementsTotal);
       }
     });
+    
+    console.log(`Successfully processed ${processedCount} achievement documents`);
+    
+    // Fetch game names for games with unknown names
+    const gameNamePromises: Promise<any>[] = [];
+    usersMap.forEach(user => {
+      user.games.forEach((game, gameId) => {
+        if (game.gameName === `Game ${gameId}` || game.gameName === 'Unknown Game') {
+          const promise = axios.get(`/api/steam/game-names?gameId=${gameId}`)
+            .then(response => {
+              if (response.data && response.data.name && response.data.name !== `Game ${gameId}`) {
+                game.gameName = response.data.name;
+                console.log(`Updated game name for ${gameId} to ${game.gameName}`);
+              }
+            })
+            .catch(err => {
+              console.error(`Failed to get game name for ${gameId}:`, err);
+            });
+          gameNamePromises.push(promise);
+        }
+      });
+    });
+    
+    // Wait for all game name requests to complete
+    if (gameNamePromises.length > 0) {
+      console.log(`Fetching names for ${gameNamePromises.length} games with unknown names`);
+      await Promise.all(gameNamePromises).catch(err => {
+        console.error('Error fetching game names:', err);
+      });
+    }
     
     // Calculate achievement rates for all users
     usersMap.forEach(user => {

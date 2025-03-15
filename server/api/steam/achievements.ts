@@ -6,16 +6,18 @@ import axios from 'axios';
 export default defineEventHandler(async (event) => {
   // Get runtime config
   const config = useRuntimeConfig();
+  const steamApiKey = config.steamApiKey;
   
   // Get query parameters
   const query = getQuery(event);
   const gameId = query.gameId as string;
   const forceRefresh = query.forceRefresh === 'true';
+  const providedSteamId = query.steamId as string;
   
   if (!gameId) {
     return createError({
       statusCode: 400,
-      statusMessage: 'Game ID is required'
+      message: 'Game ID is required'
     });
   }
   
@@ -23,7 +25,8 @@ export default defineEventHandler(async (event) => {
   const cookies = parseCookies(event);
   const idToken = cookies.idToken;
   
-  if (!idToken) {
+  // If steamId is provided in the query, we can skip authentication
+  if (!providedSteamId && !idToken) {
     return createError({
       statusCode: 401,
       statusMessage: 'Not authenticated'
@@ -31,49 +34,52 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    // Verify the token and get user
-    const decodedToken = await getAuth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-    
     // Get Firestore instance
     const db = getFirestore();
     
-    // Get user document to retrieve Steam ID
-    const userDoc = await db.collection('users').doc(userId).get();
+    let steamId = providedSteamId;
+    let userId = null;
     
-    if (!userDoc.exists) {
-      return createError({
-        statusCode: 404,
-        statusMessage: 'User not found'
-      });
+    // If no steamId is provided, use the authenticated user's steamId
+    if (!steamId && idToken) {
+      // Verify the token and get user
+      const decodedToken = await getAuth().verifyIdToken(idToken);
+      userId = decodedToken.uid;
+      
+      // Get the user document from Firestore
+      const userDoc = await db.collection('users').doc(userId).get();
+      
+      if (!userDoc.exists) {
+        return createError({
+          statusCode: 404,
+          message: 'User not found'
+        });
+      }
+      
+      const userData = userDoc.data();
+      
+      // Check if the user has a connected Steam account
+      if (!userData?.connectedAccounts?.steam?.steamId) {
+        return createError({
+          statusCode: 400,
+          message: 'No Steam account connected'
+        });
+      }
+      
+      steamId = userData.connectedAccounts.steam.steamId;
     }
-    
-    const userData = userDoc.data();
-    const steamId = userData?.connectedAccounts?.steam?.steamId;
     
     if (!steamId) {
       return createError({
         statusCode: 400,
-        statusMessage: 'Steam account not connected'
+        message: 'Steam ID is required'
       });
     }
     
-    
-    // Get Steam API key from runtime config
-    const steamApiKey = config.public.steamApiKey;
-    
-    if (!steamApiKey) {
-      return createError({
-        statusCode: 500,
-        statusMessage: 'Steam API key not configured'
-      });
-    }
-    
-    // First, check if we have cached achievements in Firestore
+    // Check if we have cached achievements for this user and game
     const cachedAchievementsDoc = await db.collection('gameAchievements')
       .doc(`${steamId}_${gameId}`)
-      .get()
-      .catch(() => null);
+      .get();
     
     if (!forceRefresh && cachedAchievementsDoc?.exists) {
       const cachedData = cachedAchievementsDoc.data() || {};
@@ -230,7 +236,8 @@ export default defineEventHandler(async (event) => {
         timestamp: new Date(),
         isPrivate: false,
         bypassedPrivacy: false,
-        forced: false
+        forced: false,
+        gameName: gameDetails?.name || `Game ${gameId}`
       })
       .catch(error => console.log('Error caching achievements:', error));
     

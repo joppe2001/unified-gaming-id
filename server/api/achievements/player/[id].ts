@@ -1,5 +1,6 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3';
 import { getFirestore } from 'firebase-admin/firestore';
+import axios from 'axios';
 
 interface GameData {
   gameId: string;
@@ -21,6 +22,16 @@ interface PlayerData {
   lastUnlocked: number;
   connectedAccounts?: any;
   games: GameData[];
+}
+
+interface SteamGame {
+  appid: number;
+  name: string;
+  playtime_forever?: number;
+  img_icon_url?: string;
+  img_logo_url?: string;
+  rtime_last_played?: number;
+  [key: string]: any; // Allow for additional properties
 }
 
 export default defineEventHandler(async (event) => {
@@ -50,13 +61,26 @@ export default defineEventHandler(async (event) => {
     const userData = userDoc.data() || {};
     console.log(`Found user document for ${playerId} with displayName: ${userData.displayName || 'null'}`);
     
-    // Get all achievement documents for this player
-    console.log(`Fetching achievements for player: ${playerId}`);
+    // Get the user's Steam ID if available
+    const steamId = userData?.connectedAccounts?.steam?.steamId;
+    
+    if (!steamId) {
+      console.warn(`Player ${playerId} does not have a connected Steam account`);
+      return generateFallbackData(playerId);
+    }
+    
+    console.log(`Found Steam ID ${steamId} for player ${playerId}`);
+    
+    // Get all achievement documents for this player using their Steam ID
+    console.log(`Fetching achievements for player with Steam ID: ${steamId}`);
+    
+    // Query for documents where the ID starts with the steamId followed by an underscore
     const achievementsSnapshot = await db.collection('gameAchievements')
-      .where('userId', '==', playerId)
+      .where('__name__', '>=', `${steamId}_`)
+      .where('__name__', '<=', `${steamId}_\uf8ff`)
       .get();
     
-    console.log(`Found ${achievementsSnapshot.size} achievement documents for player: ${playerId}`);
+    console.log(`Found ${achievementsSnapshot.size} achievement documents for player with Steam ID: ${steamId}`);
     
     // Initialize player data
     const player: PlayerData = {
@@ -79,6 +103,10 @@ export default defineEventHandler(async (event) => {
     
     // Process achievement documents
     if (!achievementsSnapshot.empty) {
+      // First, create a map of games to store all game data
+      const gamesMap = new Map<string, GameData>();
+      
+      // Process each achievement document
       achievementsSnapshot.forEach(doc => {
         const data = doc.data();
         
@@ -88,8 +116,15 @@ export default defineEventHandler(async (event) => {
           return;
         }
         
-        // Extract game ID from document ID (format: userId_gameId)
-        const gameId = doc.id.split('_')[1];
+        // Extract game ID from document ID (format: steamId_gameId)
+        const docParts = doc.id.split('_');
+        if (docParts.length < 2) {
+          console.warn(`Invalid document ID format: ${doc.id}`);
+          return;
+        }
+        
+        // The gameId is everything after the first underscore
+        const gameId = docParts.slice(1).join('_');
         
         if (!gameId) {
           console.warn(`Invalid document ID format: ${doc.id}`);
@@ -98,14 +133,18 @@ export default defineEventHandler(async (event) => {
         
         console.log(`Processing game ${gameId} (${data.gameName || 'Unknown Game'}) for player ${playerId}`);
         
-        // Initialize game data
-        const game: GameData = {
-          gameId,
-          gameName: data.gameName || 'Unknown Game',
-          achievementsTotal: data.achievements.length,
-          achievementsUnlocked: 0,
-          lastPlayed: data.lastPlayed || null
-        };
+        // Get or create game data
+        let game = gamesMap.get(gameId);
+        if (!game) {
+          game = {
+            gameId,
+            gameName: data.gameName || 'Unknown Game',
+            achievementsTotal: data.achievements.length,
+            achievementsUnlocked: 0,
+            lastPlayed: data.lastPlayed || null
+          };
+          gamesMap.set(gameId, game);
+        }
         
         // Count achievements
         player.totalAchievements += data.achievements.length;
@@ -123,10 +162,115 @@ export default defineEventHandler(async (event) => {
             }
           }
         });
-        
-        // Add game to player's games
-        player.games.push(game);
       });
+      
+      // Try to fetch additional game information from Steam API
+      try {
+        // Get runtime config
+        const config = useRuntimeConfig();
+        const steamApiKey = config.steamApiKey;
+        
+        if (steamApiKey) {
+          // Fetch owned games from Steam API
+          const ownedGamesResponse = await axios.get(
+            `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${steamApiKey}&steamid=${steamId}&include_appinfo=true`
+          ).catch(error => {
+            console.error('Error fetching owned games from Steam API:', error);
+            return null;
+          });
+          
+          if (ownedGamesResponse?.data?.response?.games) {
+            const steamGames: SteamGame[] = ownedGamesResponse.data.response.games;
+            console.log(`Found ${steamGames.length} games from Steam API`);
+            
+            // Create a map of Steam games for quick lookup
+            const steamGamesMap = new Map<string, SteamGame>();
+            steamGames.forEach(game => {
+              steamGamesMap.set(game.appid.toString(), game);
+            });
+            
+            // First pass: Update existing games with Steam data
+            gamesMap.forEach((game, gameId) => {
+              const steamGame = steamGamesMap.get(gameId);
+              if (steamGame) {
+                // Always prioritize the Steam API name over the stored name
+                // Only keep the stored name if it's not the default "Unknown Game" or "Game {id}"
+                if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}` || !game.gameName) {
+                  game.gameName = steamGame.name;
+                }
+                game.lastPlayed = game.lastPlayed || (steamGame.rtime_last_played || null);
+                
+                // Remove from steamGamesMap so we don't add it twice
+                steamGamesMap.delete(gameId);
+              } else {
+                // If we can't find the game in Steam API, try to improve the name
+                if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}`) {
+                  // Try to fetch the game name from our game-names API
+                  console.log(`Attempting to get name for unknown game ${gameId} from game-names API`);
+                  try {
+                    axios.get(`/api/steam/game-names?gameId=${gameId}`)
+                      .then(response => {
+                        if (response.data && response.data.name) {
+                          game.gameName = response.data.name;
+                          console.log(`Updated game name from game-names API: ${game.gameName}`);
+                        }
+                      })
+                      .catch(err => {
+                        console.error(`Failed to get game name from game-names API for ${gameId}:`, err);
+                      });
+                  } catch (err) {
+                    console.error(`Error fetching game name from game-names API for ${gameId}:`, err);
+                  }
+                }
+              }
+            });
+            
+            // Second pass: Add any games from Steam API that weren't in our achievements collection
+            steamGamesMap.forEach(steamGame => {
+              const gameId = steamGame.appid.toString();
+              const game = {
+                gameId,
+                gameName: steamGame.name,
+                achievementsTotal: 0, // We don't know if it has achievements
+                achievementsUnlocked: 0,
+                lastPlayed: steamGame.rtime_last_played || null
+              };
+              gamesMap.set(gameId, game);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching additional game information:', error);
+      }
+      
+      // Fetch game names for any games that still have "Unknown Game" or "Game {id}" as their name
+      const gameNamePromises: Promise<any>[] = [];
+      gamesMap.forEach((game, gameId) => {
+        if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}`) {
+          const promise = axios.get(`/api/steam/game-names?gameId=${gameId}`)
+            .then(response => {
+              if (response.data && response.data.name) {
+                game.gameName = response.data.name;
+                console.log(`Updated game name for ${gameId} to ${game.gameName}`);
+              }
+            })
+            .catch(err => {
+              console.error(`Failed to get game name for ${gameId}:`, err);
+            });
+          gameNamePromises.push(promise);
+        }
+      });
+      
+      // Wait for all game name requests to complete
+      if (gameNamePromises.length > 0) {
+        console.log(`Fetching names for ${gameNamePromises.length} games with unknown names`);
+        await Promise.all(gameNamePromises).catch(err => {
+          console.error('Error fetching game names:', err);
+        });
+      }
+      
+      // Convert the map to an array and add to player's games
+      player.games = Array.from(gamesMap.values());
       
       // If there are connected accounts, try to extract player names for games
       if (player.connectedAccounts) {
@@ -146,8 +290,17 @@ export default defineEventHandler(async (event) => {
         player.achievementRate = (player.unlockedAchievements / player.totalAchievements) * 100;
       }
       
-      // Sort games by achievement count (descending)
-      player.games.sort((a, b) => b.achievementsUnlocked - a.achievementsUnlocked);
+      // Sort games by achievement count (descending), then by last played (descending)
+      player.games.sort((a, b) => {
+        // First sort by achievements unlocked
+        const achievementDiff = b.achievementsUnlocked - a.achievementsUnlocked;
+        if (achievementDiff !== 0) return achievementDiff;
+        
+        // If same number of achievements, sort by last played
+        const aLastPlayed = a.lastPlayed || 0;
+        const bLastPlayed = b.lastPlayed || 0;
+        return bLastPlayed - aLastPlayed;
+      });
     } else {
       console.log(`No achievements found for player: ${playerId}`);
     }
