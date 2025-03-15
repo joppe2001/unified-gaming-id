@@ -78,12 +78,19 @@
             <!-- Profile Avatar -->
             <div class="absolute bottom-0 left-8 transform translate-y-1/2 flex items-end">
               <div class="relative">
-                <img 
-                  :src="player.photoURL || `https://api.dicebear.com/6.x/bottts/svg?seed=${player.displayName || player.userId}`" 
-                  :alt="player.displayName || 'Player'" 
-                  class="w-24 h-24 rounded-full border-4 border-gray-800 object-cover shadow-glow"
-                  @error="handleImageError"
-                />
+                <template v-if="!avatarImageError">
+                  <img 
+                    :src="player.photoURL || `https://api.dicebear.com/6.x/bottts/svg?seed=${player.displayName || player.userId}`" 
+                    :alt="player.displayName || 'Player'" 
+                    class="w-24 h-24 rounded-full border-4 border-gray-800 object-cover shadow-glow"
+                    @error="handleAvatarImageError"
+                  />
+                </template>
+                <div v-else class="w-24 h-24 rounded-full border-4 border-gray-800 bg-gray-700 flex items-center justify-center shadow-glow">
+                  <svg class="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
                 <div class="absolute inset-0 rounded-full border-2 border-blue-400 opacity-50 animate-pulse"></div>
               </div>
               <div class="ml-4 mb-4">
@@ -153,12 +160,17 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="game in player.games" :key="game.gameId" class="bg-gray-800 bg-opacity-70 rounded-xl shadow-glow border border-gray-700 overflow-hidden backdrop-blur-sm">
               <div class="h-24 bg-gray-900 overflow-hidden">
-                <img 
-                  :src="`https://cdn.cloudflare.steamstatic.com/steam/apps/${game.gameId}/header.jpg`" 
-                  :alt="game.gameName" 
-                  class="h-full w-full object-cover"
-                  @error="handleGameImageError"
-                />
+                <template v-if="!game.imageError">
+                  <img 
+                    :src="`https://cdn.cloudflare.steamstatic.com/steam/apps/${game.gameId}/header.jpg`" 
+                    :alt="game.gameName" 
+                    class="h-full w-full object-cover"
+                    @error="handleGameImageError($event, game)"
+                  />
+                </template>
+                <div v-else class="h-full w-full flex items-center justify-center bg-gray-800">
+                  <span class="text-xs text-gray-400 text-center px-2">Image Unavailable</span>
+                </div>
               </div>
               <div class="p-4">
                 <h4 class="text-lg font-medium text-blue-300 mb-1">{{ game.gameName }}</h4>
@@ -192,12 +204,17 @@
               <div v-for="achievement in recentAchievements" :key="achievement.id" class="p-4 hover:bg-gray-700/50 transition-colors">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 h-12 w-12 bg-gray-900 rounded-md overflow-hidden border border-gray-700 mr-4">
-                    <img 
-                      :src="achievement.iconUrl" 
-                      :alt="achievement.name" 
-                      class="h-full w-full object-cover"
-                      @error="handleImageError"
-                    />
+                    <template v-if="!achievement.imageError">
+                      <img 
+                        :src="achievement.iconUrl" 
+                        :alt="achievement.name" 
+                        class="h-full w-full object-cover"
+                        @error="handleAchievementImageError($event, achievement)"
+                      />
+                    </template>
+                    <div v-else class="h-full w-full flex items-center justify-center bg-gray-800">
+                      <span class="text-xs text-gray-400 text-center px-2">Image Unavailable</span>
+                    </div>
                   </div>
                   <div class="flex-1">
                     <div class="flex justify-between">
@@ -251,6 +268,7 @@ const error = ref(false);
 const errorMessage = ref('');
 const player = ref(null);
 const isFallback = ref(false);
+const avatarImageError = ref(false);
 
 // Mock achievement data for the player
 const recentAchievements = computed(() => {
@@ -269,7 +287,8 @@ const recentAchievements = computed(() => {
       iconUrl: 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/570/d4f85b1d9797f45d4d13f92a6a2104bd7b2a8b8e.jpg',
       globalPercentage: Math.random() * 100,
       gameName: player.value.games[0]?.gameName || 'Unknown Game',
-      unlockTime: Math.floor(Date.now() / 1000) - (86400 * i) // i days ago
+      unlockTime: Math.floor(Date.now() / 1000) - (86400 * i), // i days ago
+      imageError: false
     });
   }
   
@@ -281,6 +300,7 @@ const fetchPlayerProfile = async () => {
   loading.value = true;
   error.value = false;
   isFallback.value = false;
+  avatarImageError.value = false;
   
   try {
     console.log(`Fetching player profile for ID: ${playerId}`);
@@ -299,6 +319,13 @@ const fetchPlayerProfile = async () => {
       console.warn('Received fallback data for player profile');
     } else if (player.value) {
       console.log(`Loaded player profile with ${player.value.games.length} games and ${player.value.unlockedAchievements}/${player.value.totalAchievements} achievements`);
+      
+      // Initialize imageError property for each game
+      if (player.value.games && Array.isArray(player.value.games)) {
+        player.value.games.forEach(game => {
+          game.imageError = false;
+        });
+      }
     } else {
       console.warn('No player data returned from API');
     }
@@ -384,8 +411,23 @@ const handleImageError = (event) => {
 };
 
 // Handle game image loading errors
-const handleGameImageError = (event) => {
-  event.target.src = '/images/game-placeholder.jpg';
+const handleGameImageError = (event, game) => {
+  // Set a flag on the game object to indicate the image failed to load
+  game.imageError = true;
+  
+  // We don't need to set the src since we're using v-if/v-else
+  // event.target.src = '/images/game-placeholder.jpg';
+};
+
+// Handle achievement image loading errors
+const handleAchievementImageError = (event, achievement) => {
+  // Set a flag on the achievement object to indicate the image failed to load
+  achievement.imageError = true;
+};
+
+// Handle avatar image loading errors
+const handleAvatarImageError = () => {
+  avatarImageError.value = true;
 };
 
 // Get user display name (prioritize display name, then Steam name, then other game service names)
