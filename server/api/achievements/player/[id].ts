@@ -183,90 +183,31 @@ export default defineEventHandler(async (event) => {
             const steamGames: SteamGame[] = ownedGamesResponse.data.response.games;
             console.log(`Found ${steamGames.length} games from Steam API`);
             
-            // Create a map of Steam games for quick lookup
-            const steamGamesMap = new Map<string, SteamGame>();
-            steamGames.forEach(game => {
-              steamGamesMap.set(game.appid.toString(), game);
-            });
-            
-            // First pass: Update existing games with Steam data
-            gamesMap.forEach((game, gameId) => {
-              const steamGame = steamGamesMap.get(gameId);
-              if (steamGame) {
-                // Always prioritize the Steam API name over the stored name
-                // Only keep the stored name if it's not the default "Unknown Game" or "Game {id}"
-                if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}` || !game.gameName) {
-                  game.gameName = steamGame.name;
-                }
-                game.lastPlayed = game.lastPlayed || (steamGame.rtime_last_played || null);
-                
-                // Remove from steamGamesMap so we don't add it twice
-                steamGamesMap.delete(gameId);
-              } else {
-                // If we can't find the game in Steam API, try to improve the name
-                if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}`) {
-                  // Try to fetch the game name from our game-names API
-                  console.log(`Attempting to get name for unknown game ${gameId} from game-names API`);
-                  try {
-                    axios.get(`/api/steam/game-names?gameId=${gameId}`)
-                      .then(response => {
-                        if (response.data && response.data.name) {
-                          game.gameName = response.data.name;
-                          console.log(`Updated game name from game-names API: ${game.gameName}`);
-                        }
-                      })
-                      .catch(err => {
-                        console.error(`Failed to get game name from game-names API for ${gameId}:`, err);
-                      });
-                  } catch (err) {
-                    console.error(`Error fetching game name from game-names API for ${gameId}:`, err);
-                  }
-                }
-              }
-            });
-            
-            // Second pass: Add any games from Steam API that weren't in our achievements collection
-            steamGamesMap.forEach(steamGame => {
+            // Update game information and add missing games
+            steamGames.forEach((steamGame: SteamGame) => {
               const gameId = steamGame.appid.toString();
-              const game = {
-                gameId,
-                gameName: steamGame.name,
-                achievementsTotal: 0, // We don't know if it has achievements
-                achievementsUnlocked: 0,
-                lastPlayed: steamGame.rtime_last_played || null
-              };
-              gamesMap.set(gameId, game);
+              let game = gamesMap.get(gameId);
+              
+              if (game) {
+                // Update existing game with additional info
+                game.gameName = game.gameName === `Game ${gameId}` ? steamGame.name : game.gameName;
+                game.lastPlayed = game.lastPlayed || (steamGame.rtime_last_played || null);
+              } else {
+                // Add new game that wasn't in our achievements collection
+                game = {
+                  gameId,
+                  gameName: steamGame.name,
+                  achievementsTotal: 0, // We don't know if it has achievements
+                  achievementsUnlocked: 0,
+                  lastPlayed: steamGame.rtime_last_played || null
+                };
+                gamesMap.set(gameId, game);
+              }
             });
           }
         }
       } catch (error) {
         console.error('Error fetching additional game information:', error);
-      }
-      
-      // Fetch game names for any games that still have "Unknown Game" or "Game {id}" as their name
-      const gameNamePromises: Promise<any>[] = [];
-      gamesMap.forEach((game, gameId) => {
-        if (game.gameName === 'Unknown Game' || game.gameName === `Game ${gameId}`) {
-          const promise = axios.get(`/api/steam/game-names?gameId=${gameId}`)
-            .then(response => {
-              if (response.data && response.data.name) {
-                game.gameName = response.data.name;
-                console.log(`Updated game name for ${gameId} to ${game.gameName}`);
-              }
-            })
-            .catch(err => {
-              console.error(`Failed to get game name for ${gameId}:`, err);
-            });
-          gameNamePromises.push(promise);
-        }
-      });
-      
-      // Wait for all game name requests to complete
-      if (gameNamePromises.length > 0) {
-        console.log(`Fetching names for ${gameNamePromises.length} games with unknown names`);
-        await Promise.all(gameNamePromises).catch(err => {
-          console.error('Error fetching game names:', err);
-        });
       }
       
       // Convert the map to an array and add to player's games

@@ -1,7 +1,6 @@
 import { defineEventHandler, getQuery, parseCookies, createError } from 'h3';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import axios from 'axios';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -143,7 +142,7 @@ export default defineEventHandler(async (event) => {
       if (!user.games.has(gameId)) {
         user.games.set(gameId, {
           gameId,
-          gameName: data.gameName && data.gameName !== 'Unknown Game' ? data.gameName : `Game ${gameId}`,
+          gameName: data.gameName || 'Unknown Game',
           achievementsTotal: 0,
           achievementsUnlocked: 0,
           lastPlayed: data.lastPlayed || null
@@ -151,11 +150,6 @@ export default defineEventHandler(async (event) => {
       }
       
       const game = user.games.get(gameId)!;
-      
-      // Update game name if we have a better one
-      if (data.gameName && data.gameName !== 'Unknown Game' && game.gameName === `Game ${gameId}`) {
-        game.gameName = data.gameName;
-      }
       
       // Count achievements
       game.achievementsTotal += data.achievements.length;
@@ -185,34 +179,6 @@ export default defineEventHandler(async (event) => {
     });
     
     console.log(`Successfully processed ${processedCount} achievement documents`);
-    
-    // Fetch game names for games with unknown names
-    const gameNamePromises: Promise<any>[] = [];
-    usersMap.forEach(user => {
-      user.games.forEach((game, gameId) => {
-        if (game.gameName === `Game ${gameId}` || game.gameName === 'Unknown Game') {
-          const promise = axios.get(`/api/steam/game-names?gameId=${gameId}`)
-            .then(response => {
-              if (response.data && response.data.name && response.data.name !== `Game ${gameId}`) {
-                game.gameName = response.data.name;
-                console.log(`Updated game name for ${gameId} to ${game.gameName}`);
-              }
-            })
-            .catch(err => {
-              console.error(`Failed to get game name for ${gameId}:`, err);
-            });
-          gameNamePromises.push(promise);
-        }
-      });
-    });
-    
-    // Wait for all game name requests to complete
-    if (gameNamePromises.length > 0) {
-      console.log(`Fetching names for ${gameNamePromises.length} games with unknown names`);
-      await Promise.all(gameNamePromises).catch(err => {
-        console.error('Error fetching game names:', err);
-      });
-    }
     
     // Calculate achievement rates for all users
     usersMap.forEach(user => {

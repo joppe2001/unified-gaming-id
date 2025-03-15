@@ -79,9 +79,7 @@ export default defineEventHandler(async (event) => {
       }
       
       // Store the game name in our map
-      const gameName = data.gameName && data.gameName !== 'Unknown Game' 
-        ? data.gameName 
-        : gameNameMap.get(gameId) || `Game ${gameId}`;
+      const gameName = data.gameName || `Game ${gameId}`;
       gameNameMap.set(gameId, gameName);
       
       console.log(`Processing achievements for game ${gameId} (${gameName})`);
