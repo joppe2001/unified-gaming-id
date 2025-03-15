@@ -14,6 +14,7 @@ interface PlayerData {
   userId: string;
   displayName: string | null;
   photoURL: string | null;
+  email?: string | null;
   totalAchievements: number;
   unlockedAchievements: number;
   achievementRate: number;
@@ -24,6 +25,7 @@ interface PlayerData {
 
 export default defineEventHandler(async (event) => {
   try {
+    console.log('Starting player profile API request');
     // Get player ID from route parameter
     const playerId = getRouterParam(event, 'id');
     
@@ -31,6 +33,8 @@ export default defineEventHandler(async (event) => {
       console.warn('Player ID is missing in request');
       return generateFallbackData(playerId || 'unknown-player');
     }
+    
+    console.log(`Fetching player profile for ID: ${playerId}`);
     
     // Get Firestore instance
     const db = getFirestore();
@@ -44,17 +48,22 @@ export default defineEventHandler(async (event) => {
     }
     
     const userData = userDoc.data() || {};
+    console.log(`Found user document for ${playerId} with displayName: ${userData.displayName || 'null'}`);
     
     // Get all achievement documents for this player
+    console.log(`Fetching achievements for player: ${playerId}`);
     const achievementsSnapshot = await db.collection('gameAchievements')
       .where('userId', '==', playerId)
       .get();
+    
+    console.log(`Found ${achievementsSnapshot.size} achievement documents for player: ${playerId}`);
     
     // Initialize player data
     const player: PlayerData = {
       userId: playerId,
       displayName: userData.displayName || null,
       photoURL: userData.photoURL || null,
+      email: userData.email || null,
       totalAchievements: 0,
       unlockedAchievements: 0,
       achievementRate: 0,
@@ -65,6 +74,7 @@ export default defineEventHandler(async (event) => {
     // Add connected accounts if available
     if (userData.connectedAccounts) {
       player.connectedAccounts = userData.connectedAccounts;
+      console.log(`Player has connected accounts: ${Object.keys(userData.connectedAccounts).join(', ')}`);
     }
     
     // Process achievement documents
@@ -74,6 +84,7 @@ export default defineEventHandler(async (event) => {
         
         // Skip if no achievements array
         if (!Array.isArray(data.achievements)) {
+          console.warn(`Achievement document ${doc.id} has no achievements array`);
           return;
         }
         
@@ -81,8 +92,11 @@ export default defineEventHandler(async (event) => {
         const gameId = doc.id.split('_')[1];
         
         if (!gameId) {
+          console.warn(`Invalid document ID format: ${doc.id}`);
           return;
         }
+        
+        console.log(`Processing game ${gameId} (${data.gameName || 'Unknown Game'}) for player ${playerId}`);
         
         // Initialize game data
         const game: GameData = {
@@ -116,11 +130,12 @@ export default defineEventHandler(async (event) => {
       
       // If there are connected accounts, try to extract player names for games
       if (player.connectedAccounts) {
-        if (player.connectedAccounts.steam) {
+        if (player.connectedAccounts.steam && player.connectedAccounts.steam.personaName) {
           // For Steam games, add the Steam persona name as playerName if available
+          const steamPersonaName = player.connectedAccounts.steam.personaName;
           player.games.forEach(game => {
-            if (!game.playerName && player.connectedAccounts.steam.personaName) {
-              game.playerName = player.connectedAccounts.steam.personaName;
+            if (!game.playerName) {
+              game.playerName = steamPersonaName;
             }
           });
         }
@@ -133,8 +148,11 @@ export default defineEventHandler(async (event) => {
       
       // Sort games by achievement count (descending)
       player.games.sort((a, b) => b.achievementsUnlocked - a.achievementsUnlocked);
+    } else {
+      console.log(`No achievements found for player: ${playerId}`);
     }
     
+    console.log(`Returning player profile with ${player.games.length} games and ${player.unlockedAchievements}/${player.totalAchievements} achievements`);
     return { player };
   } catch (error) {
     console.error('Error fetching player profile:', error);
@@ -144,6 +162,7 @@ export default defineEventHandler(async (event) => {
 
 // Helper function to generate fallback data
 function generateFallbackData(userId: string = 'sample-user') {
+  console.log(`Generating fallback data for user: ${userId}`);
   // Create a friendly username from the userId
   let friendlyName: string;
   let email: string | null = null;

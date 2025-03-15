@@ -365,6 +365,7 @@ const fetchLeaderboard = async () => {
   error.value = false;
   
   try {
+    console.log('Fetching leaderboard data...');
     // Call the API endpoint to get user achievement data
     const response = await fetch('/api/achievements/community');
     
@@ -373,8 +374,25 @@ const fetchLeaderboard = async () => {
     }
     
     const data = await response.json();
-    users.value = data.users || [];
-    totalAchievements.value = data.totalAchievements || 0;
+    
+    // Check if we got fallback data
+    if (data.isFallback) {
+      console.warn('Received fallback data from API');
+      error.value = true;
+      errorMessage.value = 'Unable to load real user data. Showing sample data instead.';
+      users.value = data.users || [];
+      totalAchievements.value = data.totalAchievements || 0;
+    } else {
+      console.log(`Received ${data.users?.length || 0} users from API`);
+      users.value = data.users || [];
+      totalAchievements.value = data.totalAchievements || 0;
+      
+      if (users.value.length === 0) {
+        console.warn('No users returned from API');
+        error.value = true;
+        errorMessage.value = 'No users found with achievements. Be the first to unlock some!';
+      }
+    }
     
     loading.value = false;
   } catch (err) {

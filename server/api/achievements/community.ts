@@ -4,14 +4,16 @@ import { getAuth } from 'firebase-admin/auth';
 
 export default defineEventHandler(async (event) => {
   try {
+    console.log('Starting community achievements API request');
     // Get Firestore instance
     const db = getFirestore();
     
-    // Get all game achievements documents
-    const achievementsSnapshot = await db.collection('gameAchievements').get();
+    // First, get all users to ensure we have their profile data
+    console.log('Fetching all users from Firestore');
+    const usersSnapshot = await db.collection('users').get();
     
-    if (achievementsSnapshot.empty) {
-      // Return empty data if no achievements found
+    if (usersSnapshot.empty) {
+      console.warn('No users found in Firestore');
       return {
         users: [],
         totalAchievements: 0
@@ -39,15 +41,61 @@ export default defineEventHandler(async (event) => {
       }>
     }>();
     
+    // Initialize users map with profile data
+    usersSnapshot.forEach(doc => {
+      const userData = doc.data();
+      const userId = userData.uid || doc.id;
+      
+      if (!userId) {
+        console.warn(`User document ${doc.id} has no uid field`);
+        return;
+      }
+      
+      usersMap.set(userId, {
+        userId,
+        displayName: userData.displayName || null,
+        photoURL: userData.photoURL || null,
+        email: userData.email || null,
+        totalAchievements: 0,
+        unlockedAchievements: 0,
+        achievementRate: 0,
+        lastUnlocked: 0,
+        connectedAccounts: userData.connectedAccounts || undefined,
+        games: new Map()
+      });
+      
+      console.log(`Added user ${userId} to users map with displayName: ${userData.displayName || 'null'}`);
+    });
+    
     // Map to track all unique achievements
     const allAchievements = new Set<string>();
     
+    // Get all game achievements documents
+    console.log('Fetching all game achievements from Firestore');
+    const achievementsSnapshot = await db.collection('gameAchievements').get();
+    
+    if (achievementsSnapshot.empty) {
+      console.warn('No achievements found in Firestore');
+      // Return users with empty achievements
+      const users = Array.from(usersMap.values()).map(user => ({
+        ...user,
+        games: []
+      }));
+      
+      return {
+        users,
+        totalAchievements: 0
+      };
+    }
+    
     // Process each achievement document
+    console.log(`Processing ${achievementsSnapshot.size} achievement documents`);
     achievementsSnapshot.forEach(doc => {
       const data = doc.data();
       
       // Skip if no achievements array
       if (!Array.isArray(data.achievements)) {
+        console.warn(`Achievement document ${doc.id} has no achievements array`);
         return;
       }
       
@@ -55,11 +103,13 @@ export default defineEventHandler(async (event) => {
       const [userId, gameId] = doc.id.split('_');
       
       if (!userId || !gameId) {
+        console.warn(`Invalid document ID format: ${doc.id}`);
         return;
       }
       
-      // Initialize user if not exists
+      // Initialize user if not exists (this should be rare since we already loaded all users)
       if (!usersMap.has(userId)) {
+        console.log(`Creating new user entry for ${userId} not found in users collection`);
         usersMap.set(userId, {
           userId,
           displayName: null,
@@ -80,7 +130,8 @@ export default defineEventHandler(async (event) => {
           gameId,
           gameName: data.gameName || 'Unknown Game',
           achievementsTotal: 0,
-          achievementsUnlocked: 0
+          achievementsUnlocked: 0,
+          lastPlayed: data.lastPlayed || null
         });
       }
       
@@ -111,101 +162,37 @@ export default defineEventHandler(async (event) => {
       if (game.achievementsTotal > 0) {
         game.achievementsUnlocked = Math.min(game.achievementsUnlocked, game.achievementsTotal);
       }
-      
+    });
+    
+    // Calculate achievement rates for all users
+    usersMap.forEach(user => {
       if (user.totalAchievements > 0) {
         user.achievementRate = (user.unlockedAchievements / user.totalAchievements) * 100;
       }
     });
     
-    // Get user profiles to add display names and photos
-    try {
-      const userIds = Array.from(usersMap.keys());
-      
-      // Process users in batches of 10 to avoid Firestore limitations
-      const batchSize = 10;
-      for (let i = 0; i < userIds.length; i += batchSize) {
-        const batch = userIds.slice(i, i + batchSize);
-        
-        // Query users collection directly with the user IDs
-        const userProfiles = await db.collection('users').where('uid', 'in', batch).get();
-        
-        if (userProfiles.empty) {
-          console.log(`No user profiles found for batch ${i} to ${i + batch.length}`);
-          
-          // Try alternative query if the first one fails
-          for (const userId of batch) {
-            const userDoc = await db.collection('users').doc(userId).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data() || {};
-              if (usersMap.has(userId)) {
-                const user = usersMap.get(userId)!;
-                user.displayName = userData.displayName || null;
-                user.photoURL = userData.photoURL || null;
-                
-                // Add email if available
-                if (userData.email) {
-                  user.email = userData.email;
-                }
-                
-                // Add connected accounts if available
-                if (userData.connectedAccounts) {
-                  user.connectedAccounts = userData.connectedAccounts;
-                  
-                  // If there are connected accounts, try to extract player names for games
-                  if (user.connectedAccounts.steam && user.games) {
-                    // For Steam games, add the Steam persona name as playerName if available
-                    user.games.forEach(game => {
-                      if (!game.playerName && user.connectedAccounts.steam.personaName) {
-                        game.playerName = user.connectedAccounts.steam.personaName;
-                      }
-                    });
-                  }
-                }
-              }
-            }
+    // Add player names from connected accounts
+    usersMap.forEach(user => {
+      if (user.connectedAccounts && user.connectedAccounts.steam && user.connectedAccounts.steam.personaName) {
+        const steamPersonaName = user.connectedAccounts.steam.personaName;
+        user.games.forEach(game => {
+          if (!game.playerName) {
+            game.playerName = steamPersonaName;
           }
-        } else {
-          userProfiles.forEach(doc => {
-            const userData = doc.data() || {};
-            const userId = userData.uid;
-            
-            if (userId && usersMap.has(userId)) {
-              const user = usersMap.get(userId)!;
-              user.displayName = userData.displayName || null;
-              user.photoURL = userData.photoURL || null;
-              
-              // Add email if available
-              if (userData.email) {
-                user.email = userData.email;
-              }
-              
-              // Add connected accounts if available
-              if (userData.connectedAccounts) {
-                user.connectedAccounts = userData.connectedAccounts;
-                
-                // If there are connected accounts, try to extract player names for games
-                if (user.connectedAccounts.steam && user.games) {
-                  // For Steam games, add the Steam persona name as playerName if available
-                  user.games.forEach(game => {
-                    if (!game.playerName && user.connectedAccounts.steam.personaName) {
-                      game.playerName = user.connectedAccounts.steam.personaName;
-                    }
-                  });
-                }
-              }
-            }
-          });
-        }
+        });
       }
-    } catch (error) {
-      console.error('Error fetching user profiles:', error);
-    }
+    });
     
     // Convert maps to arrays and sort users by achievement count
-    const users = Array.from(usersMap.values()).map(user => ({
-      ...user,
-      games: Array.from(user.games.values())
-    })).sort((a, b) => b.unlockedAchievements - a.unlockedAchievements);
+    const users = Array.from(usersMap.values())
+      .map(user => ({
+        ...user,
+        games: Array.from(user.games.values())
+      }))
+      .filter(user => user.games.length > 0) // Only include users with games
+      .sort((a, b) => b.unlockedAchievements - a.unlockedAchievements);
+    
+    console.log(`Returning ${users.length} users with achievements`);
     
     // Return the user-focused data
     return {
@@ -235,6 +222,7 @@ export default defineEventHandler(async (event) => {
     
     // For demo purposes, return sample data if the API fails
     return {
+      isFallback: true,
       users: [
         {
           userId: 'user1',
@@ -316,67 +304,16 @@ export default defineEventHandler(async (event) => {
               lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 12 // 12 days ago
             },
             {
-              gameId: '440',
-              gameName: 'Team Fortress 2',
+              gameId: '271590',
+              gameName: 'Grand Theft Auto V',
               achievementsTotal: 10,
               achievementsUnlocked: 5,
               lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 10 // 10 days ago
             }
           ]
-        },
-        {
-          userId: 'user4',
-          displayName: 'CompletionistGamer',
-          photoURL: 'https://api.dicebear.com/6.x/bottts/svg?seed=CompletionistGamer',
-          totalAchievements: 200,
-          unlockedAchievements: 195,
-          achievementRate: 97.5,
-          lastUnlocked: Math.floor(Date.now() / 1000) - 86400 * 1, // 1 day ago
-          games: [
-            {
-              gameId: '570',
-              gameName: 'Dota 2',
-              achievementsTotal: 50,
-              achievementsUnlocked: 50,
-              lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 1 // 1 day ago
-            },
-            {
-              gameId: '730',
-              gameName: 'Counter-Strike 2',
-              achievementsTotal: 70,
-              achievementsUnlocked: 70,
-              lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 2 // 2 days ago
-            },
-            {
-              gameId: '440',
-              gameName: 'Team Fortress 2',
-              achievementsTotal: 80,
-              achievementsUnlocked: 75,
-              lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 3 // 3 days ago
-            }
-          ]
-        },
-        {
-          userId: 'user5',
-          displayName: 'NewPlayer',
-          photoURL: 'https://api.dicebear.com/6.x/bottts/svg?seed=NewPlayer',
-          totalAchievements: 50,
-          unlockedAchievements: 5,
-          achievementRate: 10.0,
-          lastUnlocked: Math.floor(Date.now() / 1000) - 86400 * 15, // 15 days ago
-          games: [
-            {
-              gameId: '730',
-              gameName: 'Counter-Strike 2',
-              achievementsTotal: 50,
-              achievementsUnlocked: 5,
-              lastPlayed: Math.floor(Date.now() / 1000) - 86400 * 15 // 15 days ago
-            }
-          ]
         }
       ],
-      totalAchievements: 250,
-      isFallback: true
+      totalAchievements: 350
     };
   }
 }); 

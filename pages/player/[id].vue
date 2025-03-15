@@ -283,6 +283,7 @@ const fetchPlayerProfile = async () => {
   isFallback.value = false;
   
   try {
+    console.log(`Fetching player profile for ID: ${playerId}`);
     // Call the API endpoint to get player data
     const response = await fetch(`/api/achievements/player/${playerId}`);
     
@@ -293,6 +294,14 @@ const fetchPlayerProfile = async () => {
     const data = await response.json();
     player.value = data.player;
     isFallback.value = !!data.isFallback;
+    
+    if (isFallback.value) {
+      console.warn('Received fallback data for player profile');
+    } else if (player.value) {
+      console.log(`Loaded player profile with ${player.value.games.length} games and ${player.value.unlockedAchievements}/${player.value.totalAchievements} achievements`);
+    } else {
+      console.warn('No player data returned from API');
+    }
     
     loading.value = false;
   } catch (err) {
