@@ -14,7 +14,6 @@ import {
   type Auth,
   type User,
   type UserCredential,
-  signInWithRedirect,
   getRedirectResult,
   getIdToken
 } from 'firebase/auth';

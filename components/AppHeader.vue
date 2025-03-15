@@ -31,6 +31,13 @@
             Stats
           </NuxtLink>
           <NuxtLink 
+            to="/achievements" 
+            class="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+            active-class="text-blue-400 bg-gray-800 border-b-2 border-blue-500"
+          >
+            Leaderboard
+          </NuxtLink>
+          <NuxtLink 
             to="/profile" 
             class="p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-full transition-colors"
             active-class="text-blue-400 bg-gray-800"
@@ -115,6 +122,14 @@
             @click="mobileMenuOpen = false"
           >
             Stats
+          </NuxtLink>
+          <NuxtLink 
+            to="/achievements" 
+            class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+            active-class="text-blue-400 bg-gray-700 border-l-4 border-blue-500 pl-2"
+            @click="mobileMenuOpen = false"
+          >
+            Leaderboard
           </NuxtLink>
         </div>
       </div>

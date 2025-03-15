@@ -1,4 +1,4 @@
-import { typeGamePlatform, typePlatformProfile, typePlatformGame, typePlatformAchievement, usePlatforms } from './usePlatform';
+import { usePlatforms } from './usePlatform';
 import { useAuth } from './useAuth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 

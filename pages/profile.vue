@@ -134,7 +134,7 @@
           </div>
           
           <!-- No Connected Accounts -->
-          <div v-if="!hasConnectedAccounts" class="p-6 bg-gray-900/50 rounded-lg text-center border border-gray-700">
+          <div v-if="showNoConnectedAccounts" class="p-6 bg-gray-900/50 rounded-lg text-center border border-gray-700">
             <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
@@ -207,8 +207,17 @@ const fetchProfile = async () => {
   
   try {
     const response = await $fetch('/api/user/profile');
+    console.log('Profile data in profile page:', response);
     profile.value = response;
+    
+    // Check if Steam is connected
+    if (profile.value?.connectedAccounts?.steam) {
+      console.log('Steam account is connected in profile page:', profile.value.connectedAccounts.steam);
+    } else {
+      console.log('No Steam account connected in profile page');
+    }
   } catch (error) {
+    console.error('Error fetching profile in profile page:', error);
     // Set a default empty profile to prevent errors
     profile.value = {
       uid: user.value?.uid,
@@ -261,6 +270,11 @@ const formatDate = (timestamp: any) => {
     return 'Invalid date';
   }
 };
+
+// Fix for the conditional rendering in the template
+const showNoConnectedAccounts = computed(() => {
+  return !hasConnectedAccounts.value;
+});
 
 onMounted(async () => {
   if (user.value) {
