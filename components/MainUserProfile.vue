@@ -83,8 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue';
-import type { Ref } from 'vue';
+import { inject } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 
 // Define the profile type

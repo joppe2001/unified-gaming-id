@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, inject } from 'vue';
+import { inject } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 import { useCookie, useRoute } from '#app';
 

@@ -168,11 +168,12 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 
-const { user, loading, logout } = useFirebase();
-const profile = ref(null);
-const profileImage = ref(null);
+const { user, loading } = useFirebase();
+const profile = ref<any>(null);
+const profileImage = ref<HTMLImageElement | null>(null);
 
 // Check if user has any connected accounts
 const hasConnectedAccounts = computed(() => {
@@ -181,9 +182,23 @@ const hasConnectedAccounts = computed(() => {
 });
 
 // Handle image loading errors
-const handleImageError = (event) => {
+const handleImageError = (event: Event) => {
   // Fall back to initials if image fails to load
-  event.target.style.display = 'none';
+  if (event.target) {
+    (event.target as HTMLImageElement).style.display = 'none';
+  }
+};
+
+// Logout function
+const logout = async () => {
+  try {
+    // Access signOut from the useFirebase composable
+    const { signOut } = useFirebase();
+    await signOut();
+    navigateTo('/login');
+  } catch (error) {
+    console.error('Error signing out:', error);
+  }
 };
 
 // Fetch user profile
@@ -191,7 +206,8 @@ const fetchProfile = async () => {
   if (!user.value) return;
   
   try {
-    profile.value = await $fetch('/api/user/profile');
+    const response = await $fetch('/api/user/profile');
+    profile.value = response;
   } catch (error) {
     // Set a default empty profile to prevent errors
     profile.value = {
@@ -205,7 +221,7 @@ const fetchProfile = async () => {
 };
 
 // Format date
-const formatDate = (timestamp) => {
+const formatDate = (timestamp: any) => {
   if (!timestamp) return 'Unknown date';
   
   try {

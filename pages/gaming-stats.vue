@@ -319,7 +319,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
 import { useFirebase } from '~/composables/useFirebase';
 
 const { user } = useFirebase();

@@ -123,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
 const mobileMenuOpen = ref(false);

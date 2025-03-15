@@ -58,7 +58,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 
 // Define the Game interface
 interface Game {

@@ -91,7 +91,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 
 // Define the Achievement interface
 interface Achievement {

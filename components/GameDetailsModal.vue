@@ -146,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { nextTick } from 'vue';
 import GameHeader from './GameHeader.vue';
 import AchievementFilters from './AchievementFilters.vue';
 import AchievementList from './AchievementList.vue';
